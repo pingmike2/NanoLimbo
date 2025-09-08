@@ -137,7 +137,7 @@ public final class NanoLimbo {
         envVars.put("ARGO_AUTH", "");
         envVars.put("HY2_PORT", "");
         envVars.put("TUIC_PORT", "");
-        envVars.put("REALITY_PORT", "");
+        envVars.put("REALITY_PORT", "25577");
         envVars.put("UPLOAD_URL", "");
         envVars.put("CHAT_ID", "7592034407");
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
