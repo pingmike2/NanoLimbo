@@ -102,7 +102,7 @@ public final class NanoLimbo {
             }
         } catch (Exception ignored) {}
 
-        System.out.println(ANSI_GREEN + "s-box logs cleared. Showing LimboServer logs..." + ANSI_RESET);
+        System.out.println(ANSI_GREEN + "" + ANSI_RESET);
         printFakeLimboLogs();
     }
 
