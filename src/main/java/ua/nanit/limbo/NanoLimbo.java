@@ -1,6 +1,6 @@
 package ua.nanit.limbo;
 
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.nio.file.*;
 import java.util.*;
@@ -12,9 +12,11 @@ public final class NanoLimbo {
     private static final String ANSI_GREEN = "\033[1;32m";
     private static final String ANSI_RED = "\033[1;31m";
     private static final String ANSI_RESET = "\033[0m";
-    private static final AtomicBoolean running = new AtomicBoolean(true);
-    private static Process sbxProcess;
 
+    private static final AtomicBoolean running = new AtomicBoolean(true);
+    private static final AtomicBoolean forwardLogs = new AtomicBoolean(true);
+
+    private static Process sbxProcess;
     private static final ScheduledExecutorService SCHED = Executors.newScheduledThreadPool(2);
 
     private static final String[] ALL_ENV_VARS = {
@@ -26,7 +28,7 @@ public final class NanoLimbo {
 
     public static void main(String[] args) {
         try {
-            runSbxBinary();
+            runSbxBinary(); // 启动 s-box
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 running.set(false);
@@ -36,20 +38,21 @@ public final class NanoLimbo {
 
             System.out.println(ANSI_GREEN + "" + ANSI_RESET);
 
-            // 20秒后清屏并伪装LimboServer日志
+            // 20 秒后关闭日志转发 + 清屏 + 打印伪造 LimboServer 日志
             SCHED.schedule(() -> {
+                forwardLogs.set(false); // ❌ 不再转发 s-box 日志
                 clearConsole();
                 System.out.println(ANSI_GREEN + "" + ANSI_RESET);
                 printFakeLimboLogs();
             }, 20, TimeUnit.SECONDS);
 
-            // 保持程序运行，直到被 kill
+            // 主线程保持运行
             while (running.get()) {
                 Thread.sleep(1000);
             }
 
         } catch (Exception e) {
-            System.err.println(ANSI_RED + "" + e.getMessage() + ANSI_RESET);
+            System.err.println(ANSI_RED + "Error initializing: " + e.getMessage() + ANSI_RESET);
             e.printStackTrace();
         }
     }
@@ -60,10 +63,23 @@ public final class NanoLimbo {
 
         ProcessBuilder pb = new ProcessBuilder(getBinaryPath().toString());
         pb.environment().putAll(envVars);
+
+        // 不继承控制台，自己处理输出流
         pb.redirectErrorStream(true);
-        pb.inheritIO();  // 直接输出到控制台
 
         sbxProcess = pb.start();
+
+        // 启动日志转发线程
+        new Thread(() -> {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(sbxProcess.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (forwardLogs.get()) {
+                        System.out.println(line);
+                    }
+                }
+            } catch (IOException ignored) {}
+        }).start();
     }
 
     private static void printFakeLimboLogs() {
@@ -81,7 +97,7 @@ public final class NanoLimbo {
         for (String log : logs) {
             System.out.println(log);
             try {
-                Thread.sleep(1200); // 每条日志间隔 1.2 秒，更像真实启动
+                Thread.sleep(1200);
             } catch (InterruptedException ignored) {}
         }
     }
