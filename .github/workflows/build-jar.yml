@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      jar_name: ${{ steps.prepare_jar.outputs.jar_name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,15 +26,17 @@ jobs:
       - name: Prepare JAR
         id: prepare_jar
         run: |
+          JAR_NAME="server.jar"
           JAR_PATH=$(find build/libs -name "*.jar" ! -name "*sources*" ! -name "*javadoc*" | head -n 1)
-          cp "$JAR_PATH" ./server.jar
-          echo "JAR_SIZE=$(ls -lh ./server.jar | awk '{print $5}')" >> $GITHUB_OUTPUT
+          cp "$JAR_PATH" "./$JAR_NAME"
+          echo "jar_name=$JAR_NAME" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: NanoLimbo-artifact
-          path: server.jar
+          path: "${{ steps.prepare_jar.outputs.jar_name }}"
 
   release:
     needs: build
@@ -48,7 +52,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: server.jar
+          files: "${{ needs.build.outputs.jar_name }}"
           tag_name: ${{ github.ref_name }}
           name: "NanoLimbo ${{ github.ref_name }}"
         env:
