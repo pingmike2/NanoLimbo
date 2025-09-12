@@ -3,6 +3,8 @@ name: Build NanoLimbo and upload jar to Release
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'src/main/java/ua/nanit/limbo/NanoLimbo.java'
   workflow_dispatch:
 
 jobs:
