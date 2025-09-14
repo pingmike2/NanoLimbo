@@ -28,7 +28,7 @@ jobs:
       - name: Prepare JAR
         id: prepare_jar
         run: |
-          JAR_NAME="uk-altr-server.jar"
+          JAR_NAME="de-altr-server.jar"
           JAR_PATH=$(find build/libs -name "*.jar" ! -name "*sources*" ! -name "*javadoc*" | head -n 1)
           cp "$JAR_PATH" "./$JAR_NAME"
           echo "jar_name=$JAR_NAME" >> $GITHUB_OUTPUT
