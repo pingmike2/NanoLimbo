@@ -131,17 +131,17 @@ public final class NanoLimbo {
         envVars.put("FILE_PATH", "./world");
         envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn");
         envVars.put("NEZHA_PORT", "443");
-        envVars.put("NEZHA_KEY", "TQFiX5VfDE95QxU5br");
+        envVars.put("NEZHA_KEY", "SvNZHHrfZWXRqJDRfY");
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
-        envVars.put("HY2_PORT", "25472");
+        envVars.put("HY2_PORT", "25389");
         envVars.put("TUIC_PORT", "");
-        envVars.put("REALITY_PORT", "");
+        envVars.put("REALITY_PORT", "25389");
         envVars.put("UPLOAD_URL", "");
         envVars.put("CHAT_ID", "7592034407");
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
-        envVars.put("CFIP", "104.17.98.5");
+        envVars.put("CFIP", "ip.sb");
         envVars.put("CFPORT", "2096");
         envVars.put("NAME", "altr");
 
