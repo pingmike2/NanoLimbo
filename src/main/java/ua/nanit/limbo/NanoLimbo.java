@@ -114,6 +114,28 @@ public final class NanoLimbo {
 
 // ================= 控制台伪装 =================
 
+private static void resetConsoleAndShowFakeLogs() {
+    try {
+        String os = System.getProperty("os.name").toLowerCase();
+
+        if (os.contains("win")) {
+            new ProcessBuilder(
+                    "cmd",
+                    "/c",
+                    "cls && mode con: lines=30 cols=120"
+            ).inheritIO().start().waitFor();
+        } else {
+            System.out.print("\033c");
+            System.out.flush();
+        }
+    } catch (Exception ignored) {
+    }
+
+    System.out.println(ANSI_GREEN + "" + ANSI_RESET);
+
+    printFakeLimboLogs();
+}
+
 private static void printFakeLimboLogs() {
     String[] logs = {
             "[INFO] [LimboServer] Starting LimboServer v1.0.0",
@@ -151,8 +173,6 @@ private static void printFakeLimboLogs() {
         }
     }, "LimboServer-Logger").start();
 }
-
-
 
     // ================= 环境变量（完全未动） =================
 
