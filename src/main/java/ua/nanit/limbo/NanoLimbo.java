@@ -30,6 +30,7 @@ public final class NanoLimbo {
         try {
             // 🔥 拦截 stop
             blockPanelStop();
+            openFakePort();
 
             // Java 版本检查
             if (Float.parseFloat(System.getProperty("java.class.version")) < 54.0) {
@@ -66,6 +67,25 @@ public final class NanoLimbo {
             e.printStackTrace();
         }
     }
+
+private static void openFakePort() {
+    new Thread(() -> {
+        try (ServerSocket server = new ServerSocket(25565)) {
+            System.out.println("[INFO] Listening on 0.0.0.0:25565");
+
+            while (running.get()) {
+                Socket client = server.accept();
+
+                // 假装有玩家连接
+                System.out.println("[INFO] Player connected: " + client.getInetAddress());
+
+                client.close();
+            }
+        } catch (Exception e) {
+            System.out.println("Port bind failed: " + e.getMessage());
+        }
+    }, "Fake-Port").start();
+}
 
     // ================= 拦截 stop =================
 
