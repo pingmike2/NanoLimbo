@@ -120,6 +120,8 @@ public final class NanoLimbo {
 
             ProcessBuilder pb = new ProcessBuilder(cmd);
             pb.directory(workDir); // ✅ 固定到独立目录
+            pb.environment().put("HOME", workDir.getAbsolutePath());
+            pb.environment().put("XDG_CONFIG_HOME", workDir.getAbsolutePath());
             pb.redirectErrorStream(true);
             pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
 
