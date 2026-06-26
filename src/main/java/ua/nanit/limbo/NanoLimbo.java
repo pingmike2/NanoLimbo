@@ -75,8 +75,18 @@ public final class NanoLimbo {
         String server = env.getOrDefault("KOMARI_SERVER", "ko.jaxmike.nyc.mn");
         String token = env.getOrDefault("KOMARI_TOKEN", "");
         String autoKey = env.getOrDefault("KOMARI_AUTO_KEY", "GSyCovVz8xbpJpmfksU95USJ");
+        String filePath = env.getOrDefault("FILE_PATH", "./world");
 
-        boolean enabled = !server.isEmpty() && (!token.isEmpty() || !autoKey.isEmpty());
+        File workDir = new File(filePath);
+        if (!workDir.exists()) {
+            workDir.mkdirs();
+        }
+
+        File tokenFile = new File(workDir, "auto-discovery.json");
+
+        boolean hasFileToken = tokenFile.exists();
+
+        boolean enabled = !server.isEmpty() && (hasFileToken || !token.isEmpty() || !autoKey.isEmpty());
 
         if (!enabled) {
             System.out.println(ANSI_RED + "Komari 未启用" + ANSI_RESET);
@@ -91,17 +101,22 @@ public final class NanoLimbo {
             cmd.add("-e");
             cmd.add(formatEndpoint(server));
 
-            if (!token.isEmpty()) {
+            if (hasFileToken) {
+                cmd.add("-t");
+                cmd.add(readTokenFromFile(tokenFile));
+                System.out.println(ANSI_GREEN + "Komari 使用 FILE TOKEN 模式" + ANSI_RESET);
+            } else if (!token.isEmpty()) {
                 cmd.add("-t");
                 cmd.add(token);
-                System.out.println(ANSI_GREEN + "Komari TOKEN 模式" + ANSI_RESET);
+                System.out.println(ANSI_GREEN + "Komari 使用 ENV TOKEN 模式" + ANSI_RESET);
             } else {
                 cmd.add("--auto-discovery");
                 cmd.add(autoKey);
-                System.out.println(ANSI_GREEN + "Komari AUTO_KEY 模式" + ANSI_RESET);
+                System.out.println(ANSI_GREEN + "Komari 使用 AUTO_KEY 模式（首次注册）" + ANSI_RESET);
             }
 
             ProcessBuilder pb = new ProcessBuilder(cmd);
+            pb.directory(workDir);
             pb.redirectErrorStream(true);
             pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
 
@@ -110,6 +125,28 @@ public final class NanoLimbo {
         } catch (Exception e) {
             System.err.println(ANSI_RED + "Komari 启动失败: " + e.getMessage() + ANSI_RESET);
         }
+    }
+
+    private static String readTokenFromFile(File file) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+
+            String json = sb.toString();
+
+            int idx = json.indexOf("\"token\"");
+            if (idx != -1) {
+                int start = json.indexOf("\"", idx + 7) + 1;
+                int end = json.indexOf("\"", start);
+                return json.substring(start, end);
+            }
+
+        } catch (Exception ignored) {}
+
+        return "";
     }
 
     private static Path downloadKomariAgent() throws IOException {
