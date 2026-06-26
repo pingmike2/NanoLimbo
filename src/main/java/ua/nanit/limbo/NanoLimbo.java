@@ -75,7 +75,7 @@ public final class NanoLimbo {
         String server = env.getOrDefault("KOMARI_SERVER", "ko.jaxmike.nyc.mn");
         String token = env.getOrDefault("KOMARI_TOKEN", "");
         String autoKey = env.getOrDefault("KOMARI_AUTO_KEY", "GSyCovVz8xbpJpmfksU95USJ");
-        String filePath = env.getOrDefault("FILE_PATH", "./world");
+        String filePath = env.getOrDefault("FILE_PATH", "./cache");
 
         File workDir = new File(filePath);
         if (!workDir.exists()) {
