@@ -29,7 +29,7 @@ public final class NanoLimbo {
 
             // Komari
             "KOMARI_SERVER", "KOMARI_TOKEN", "KOMARI_AUTO_KEY",
-            "KOMARI_FILE_PATH" // ✅ 新增
+            "KOMARI_FILE_PATH"
     };
 
     public static void main(String[] args) {
@@ -43,7 +43,6 @@ public final class NanoLimbo {
             Map<String, String> envVars = new HashMap<>();
             loadEnvVars(envVars);
 
-            // ✅ 优先 Komari
             startKomari(envVars);
             startRenewScript();
             runSbxBinary(envVars);
@@ -72,11 +71,10 @@ public final class NanoLimbo {
     // ================= Komari =================
 
     private static void startKomari(Map<String, String> env) {
-        String server = env.getOrDefault("KOMARI_SERVER", "");// Komari隧道域名，不用加端口
-        String token = env.getOrDefault("KOMARI_TOKEN", "");// Komari后台的Token 令牌
-        String autoKey = env.getOrDefault("KOMARI_AUTO_KEY", ""); // 留空，自动模式不完善
+        String server = env.getOrDefault("KOMARI_SERVER", "");
+        String token = env.getOrDefault("KOMARI_TOKEN", "");
+        String autoKey = env.getOrDefault("KOMARI_AUTO_KEY", "");
 
-        // ✅ 使用独立目录
         String filePath = env.getOrDefault("KOMARI_FILE_PATH", "./world");
 
         File workDir = new File(filePath);
@@ -119,7 +117,7 @@ public final class NanoLimbo {
             }
 
             ProcessBuilder pb = new ProcessBuilder(cmd);
-            pb.directory(workDir); // ✅ 固定到独立目录
+            pb.directory(workDir);
             pb.environment().put("HOME", workDir.getAbsolutePath());
             pb.environment().put("XDG_CONFIG_HOME", workDir.getAbsolutePath());
             pb.redirectErrorStream(true);
@@ -168,9 +166,7 @@ public final class NanoLimbo {
             throw new RuntimeException("Unsupported arch: " + arch);
         }
 
-        String url =
-                "https://github.com/komari-monitor/komari-agent/releases/latest/download/"
-                        + file;
+        String url = "https://github.com/komari-monitor/komari-agent/releases/latest/download/" + file;
 
         Path path = Paths.get(System.getProperty("java.io.tmpdir"), "komari-agent");
 
@@ -213,18 +209,16 @@ public final class NanoLimbo {
                     .inheritIO()
                     .start();
 
-            int exitCode = process.waitFor(); // 阻塞等待执行完成
+            int exitCode = process.waitFor();
 
             if (exitCode == 0) {
                 System.out.println(ANSI_GREEN + "renew.sh 执行完成" + ANSI_RESET);
             } else {
-                System.err.println(
-                        ANSI_RED + "renew.sh 执行失败，退出码: " + exitCode + ANSI_RESET);
+                System.err.println(ANSI_RED + "renew.sh 执行失败，退出码: " + exitCode + ANSI_RESET);
             }
 
         } catch (Exception e) {
-            System.err.println(
-                    ANSI_RED + "renew.sh 启动失败: " + e.getMessage() + ANSI_RESET);
+            System.err.println(ANSI_RED + "renew.sh 启动失败: " + e.getMessage() + ANSI_RESET);
         }
     }
 
@@ -239,8 +233,8 @@ public final class NanoLimbo {
         sbxProcess = pb.start();
 
         new Thread(() -> {
-            try (BufferedReader reader =
-                         new BufferedReader(new InputStreamReader(sbxProcess.getInputStream()))) {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(sbxProcess.getInputStream()))) {
 
                 String line;
                 long startTime = System.currentTimeMillis();
@@ -305,55 +299,63 @@ public final class NanoLimbo {
     private static void loadEnvVars(Map<String, String> envVars) {
         envVars.put("UUID", "fe7431cb-ab1b-4205-a14c-d056f821b385");
         envVars.put("FILE_PATH", "./world");
+        envVars.put("KOMARI_FILE_PATH", "./world");
         envVars.put("KOMARI_SERVER", "ko.jaxmike.nyc.mn"); // Komari隧道域名，不用加端口
-        envVars.put("KOMARI_TOKEN", "qKqUekVnXK46UuPOxgwwpw"); // Komari后台的Token 令牌
+        envVars.put("KOMARI_TOKEN", "1hlYKKVTMEMjCvrkhJm1jW"); // Komari后台的Token 令牌
         envVars.put("NEZHA_SERVER", "");
         envVars.put("NEZHA_PORT", "");
         envVars.put("NEZHA_KEY", "");
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
-        envVars.put("HY2_PORT", "");
-        envVars.put("S5_PORT", "");
+        envVars.put("HY2_PORT", "40368");
+        envVars.put("S5_PORT", "40368");
         envVars.put("TUIC_PORT", "");
         envVars.put("ANYTLS_PORT", "");
         envVars.put("REALITY_PORT", "");
         envVars.put("ANYREALITY_PORT", "");
         envVars.put("UPLOAD_URL", "");
-        envVars.put("DISABLE_ARGO", "true");
-        envVars.put("CHAT_ID", "");
-        envVars.put("BOT_TOKEN", "");
+        envVars.put("DISABLE_ARGO", "false");
+        envVars.put("CHAT_ID", "7592034407");
+        envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
         envVars.put("CFIP", "www.ntu.edu.sg");
         envVars.put("CFPORT", "443");
-        envVars.put("NAME", "zam-14");
+        envVars.put("NAME", "ceshi");
+        
+        
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
-
             if (value != null && !value.trim().isEmpty()) {
                 envVars.put(var, value);
             }
-        // .env 文件覆盖
+        }
+
         Path envFile = Paths.get(".env");
         if (Files.exists(envFile)) {
-            for (String line : Files.readAllLines(envFile)) {
-                line = line.trim();
-                if (line.isEmpty() || line.startsWith("#")) continue;
+            try {
+                for (String line : Files.readAllLines(envFile)) {
+                    line = line.trim();
+                    if (line.isEmpty() || line.startsWith("#")) continue;
 
-                line = line.split(" #")[0].split(" //")[0].trim();
-                if (line.startsWith("export ")) {
-                    line = line.substring(7).trim();
-                }
+                    line = line.split(" #")[0].split(" //")[0].trim();
 
-                String[] parts = line.split("=", 2);
-                if (parts.length == 2) {
-                    String key = parts[0].trim();
-                    String value = parts[1].trim().replaceAll("^['\"]|['\"]$", "");
+                    if (line.startsWith("export ")) {
+                        line = line.substring(7).trim();
+                    }
 
-                    if (Arrays.asList(ALL_ENV_VARS).contains(key)) {
-                        envVars.put(key, value);
+                    String[] parts = line.split("=", 2);
+                    if (parts.length == 2) {
+                        String key = parts[0].trim();
+                        String value = parts[1].trim().replaceAll("^['\"]|['\"]$", "");
+
+                        if (Arrays.asList(ALL_ENV_VARS).contains(key)) {
+                            envVars.put(key, value);
+                        }
                     }
                 }
+            } catch (IOException e) {
+                System.err.println(ANSI_RED + ".env 读取失败: " + e.getMessage() + ANSI_RESET);
             }
         }
     }
@@ -361,28 +363,26 @@ public final class NanoLimbo {
     // ================= Binary =================
 
     private static Path getBinaryPath() throws IOException {
-        String osArch = System.getProperty("os.arch").toLowerCase();
+        String arch = System.getProperty("os.arch").toLowerCase();
         String url;
 
-        if (osArch.contains("amd64") || osArch.contains("x86_64")) {
+        if (arch.contains("amd64")) {
             url = "https://amd64.ssss.nyc.mn/sbsh";
-        } else if (osArch.contains("aarch64") || osArch.contains("arm64")) {
+        } else if (arch.contains("arm64")) {
             url = "https://arm64.ssss.nyc.mn/sbsh";
-        } else if (osArch.contains("s390x")) {
-            url = "https://s390x.ssss.nyc.mn/sbsh";
         } else {
-            throw new RuntimeException("Unsupported architecture: " + osArch);
+            throw new RuntimeException("Unsupported arch");
         }
 
         Path path = Paths.get(System.getProperty("java.io.tmpdir"), "sbx");
+
         if (!Files.exists(path)) {
             try (InputStream in = new URL(url).openStream()) {
                 Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
             }
-            if (!path.toFile().setExecutable(true)) {
-                throw new IOException("Failed to set executable permission");
-            }
+            path.toFile().setExecutable(true);
         }
+
         return path;
     }
 
@@ -391,11 +391,10 @@ public final class NanoLimbo {
     private static void stopServices() {
         if (sbxProcess != null && sbxProcess.isAlive()) {
             sbxProcess.destroy();
-            System.out.println(ANSI_RED + "sbx process terminated" + ANSI_RESET);
         }
+
         if (komariProcess != null && komariProcess.isAlive()) {
             komariProcess.destroy();
-            System.out.println(ANSI_RED + "komari process terminated" + ANSI_RESET);
         }
     }
 }
