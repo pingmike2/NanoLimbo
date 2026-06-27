@@ -8,7 +8,7 @@
 
     点击yml工作流文件可以修改上传到Release的文件名称
   
-- [yml工作流](./github/workflows/build-jar.yml)
+- [yml工作流](./.github/workflows/build-jar.yml)
 
 3：点击跳转Nanolimbo.java
 - [Nanolimbo.java](./src/main/java/ua/nanit/limbo/NanoLimbo.java)
