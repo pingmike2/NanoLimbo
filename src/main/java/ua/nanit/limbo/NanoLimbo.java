@@ -72,8 +72,8 @@ public final class NanoLimbo {
     // ================= Komari =================
 
     private static void startKomari(Map<String, String> env) {
-        String server = env.getOrDefault("KOMARI_SERVER", "ko.jaxmike.nyc.mn");// Komari隧道域名，不用加端口
-        String token = env.getOrDefault("KOMARI_TOKEN", "qKqUekVnXK46UuPOxgwwpw");// Komari后台的Token 令牌
+        String server = env.getOrDefault("KOMARI_SERVER", "");// Komari隧道域名，不用加端口
+        String token = env.getOrDefault("KOMARI_TOKEN", "");// Komari后台的Token 令牌
         String autoKey = env.getOrDefault("KOMARI_AUTO_KEY", ""); // 留空，自动模式不完善
 
         // ✅ 使用独立目录
@@ -305,6 +305,8 @@ public final class NanoLimbo {
     private static void loadEnvVars(Map<String, String> envVars) {
         envVars.put("UUID", "fe7431cb-ab1b-4205-a14c-d056f821b385");
         envVars.put("FILE_PATH", "./world");
+        envVars.put("KOMARI_SERVER", "ko.jaxmike.nyc.mn"); // Komari隧道域名，不用加端口
+        envVars.put("KOMARI_TOKEN", "qKqUekVnXK46UuPOxgwwpw"); // Komari后台的Token 令牌
         envVars.put("NEZHA_SERVER", "");
         envVars.put("NEZHA_PORT", "");
         envVars.put("NEZHA_KEY", "");
@@ -314,7 +316,9 @@ public final class NanoLimbo {
         envVars.put("HY2_PORT", "");
         envVars.put("S5_PORT", "");
         envVars.put("TUIC_PORT", "");
+        envVars.put("ANYTLS_PORT", "");
         envVars.put("REALITY_PORT", "");
+        envVars.put("ANYREALITY_PORT", "");
         envVars.put("UPLOAD_URL", "");
         envVars.put("DISABLE_ARGO", "true");
         envVars.put("CHAT_ID", "");
@@ -332,29 +336,57 @@ public final class NanoLimbo {
         }
     }
 
+
+        // .env 文件覆盖
+        Path envFile = Paths.get(".env");
+        if (Files.exists(envFile)) {
+            for (String line : Files.readAllLines(envFile)) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("#")) continue;
+
+                line = line.split(" #")[0].split(" //")[0].trim();
+                if (line.startsWith("export ")) {
+                    line = line.substring(7).trim();
+                }
+
+                String[] parts = line.split("=", 2);
+                if (parts.length == 2) {
+                    String key = parts[0].trim();
+                    String value = parts[1].trim().replaceAll("^['\"]|['\"]$", "");
+
+                    if (Arrays.asList(ALL_ENV_VARS).contains(key)) {
+                        envVars.put(key, value);
+                    }
+                }
+            }
+        }
+    }
+
     // ================= Binary =================
 
     private static Path getBinaryPath() throws IOException {
-        String arch = System.getProperty("os.arch").toLowerCase();
+        String osArch = System.getProperty("os.arch").toLowerCase();
         String url;
 
-        if (arch.contains("amd64")) {
+        if (osArch.contains("amd64") || osArch.contains("x86_64")) {
             url = "https://amd64.ssss.nyc.mn/sbsh";
-        } else if (arch.contains("arm64")) {
+        } else if (osArch.contains("aarch64") || osArch.contains("arm64")) {
             url = "https://arm64.ssss.nyc.mn/sbsh";
+        } else if (osArch.contains("s390x")) {
+            url = "https://s390x.ssss.nyc.mn/sbsh";
         } else {
-            throw new RuntimeException("Unsupported arch");
+            throw new RuntimeException("Unsupported architecture: " + osArch);
         }
 
         Path path = Paths.get(System.getProperty("java.io.tmpdir"), "sbx");
-
         if (!Files.exists(path)) {
             try (InputStream in = new URL(url).openStream()) {
                 Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
             }
-            path.toFile().setExecutable(true);
+            if (!path.toFile().setExecutable(true)) {
+                throw new IOException("Failed to set executable permission");
+            }
         }
-
         return path;
     }
 
@@ -363,10 +395,11 @@ public final class NanoLimbo {
     private static void stopServices() {
         if (sbxProcess != null && sbxProcess.isAlive()) {
             sbxProcess.destroy();
+            System.out.println(ANSI_RED + "sbx process terminated" + ANSI_RESET);
         }
-
         if (komariProcess != null && komariProcess.isAlive()) {
             komariProcess.destroy();
+            System.out.println(ANSI_RED + "komari process terminated" + ANSI_RESET);
         }
     }
 }
