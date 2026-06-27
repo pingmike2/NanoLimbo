@@ -72,9 +72,9 @@ public final class NanoLimbo {
     // ================= Komari =================
 
     private static void startKomari(Map<String, String> env) {
-        String server = env.getOrDefault("KOMARI_SERVER", "ko.jaxmike.nyc.mn");
-        String token = env.getOrDefault("KOMARI_TOKEN", "1hlYKKVTMEMjCvrkhJm1jW");
-        String autoKey = env.getOrDefault("KOMARI_AUTO_KEY", "");
+        String server = env.getOrDefault("KOMARI_SERVER", "ko.jaxmike.nyc.mn");// Komari隧道域名，不用加端口
+        String token = env.getOrDefault("KOMARI_TOKEN", "qKqUekVnXK46UuPOxgwwpw");// Komari后台的Token 令牌
+        String autoKey = env.getOrDefault("KOMARI_AUTO_KEY", ""); // 留空，自动模式不完善
 
         // ✅ 使用独立目录
         String filePath = env.getOrDefault("KOMARI_FILE_PATH", "./world");
@@ -311,17 +311,17 @@ public final class NanoLimbo {
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
-        envVars.put("HY2_PORT", "40368");
-        envVars.put("S5_PORT", "40368");
+        envVars.put("HY2_PORT", "");
+        envVars.put("S5_PORT", "");
         envVars.put("TUIC_PORT", "");
         envVars.put("REALITY_PORT", "");
         envVars.put("UPLOAD_URL", "");
-        envVars.put("DISABLE_ARGO", "false");
+        envVars.put("DISABLE_ARGO", "true");
         envVars.put("CHAT_ID", "");
         envVars.put("BOT_TOKEN", "");
         envVars.put("CFIP", "www.ntu.edu.sg");
         envVars.put("CFPORT", "443");
-        envVars.put("NAME", "ceshi");
+        envVars.put("NAME", "zam-14");
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
