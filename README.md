@@ -6,9 +6,10 @@
 
 2：在Actions菜单允许 `I understand my workflows, go ahead and enable them` 按钮
 
-    点击yml工作流文件可以修改上传到Release的文件名称
   
 - [yml工作流](./.github/workflows/build-jar.yml)
+
+    点击yml工作流文件可以修改上传到Release的文件名称
 
 3：点击跳转Nanolimbo.java
 - [Nanolimbo.java](./src/main/java/ua/nanit/limbo/NanoLimbo.java)
