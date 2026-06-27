@@ -333,10 +333,6 @@ public final class NanoLimbo {
             if (value != null && !value.trim().isEmpty()) {
                 envVars.put(var, value);
             }
-        }
-    }
-
-
         // .env 文件覆盖
         Path envFile = Paths.get(".env");
         if (Files.exists(envFile)) {
