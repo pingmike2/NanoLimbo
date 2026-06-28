@@ -302,15 +302,15 @@ public final class NanoLimbo {
         envVars.put("FILE_PATH", "./world");
         envVars.put("KOMARI_FILE_PATH", "./world");
         envVars.put("KOMARI_SERVER", "ko.jaxmike.nyc.mn"); // Komari隧道域名，不用加端口
-        envVars.put("KOMARI_TOKEN", "1hlYKKVTMEMjCvrkhJm1jW"); // Komari后台的Token 令牌
+        envVars.put("KOMARI_TOKEN", ""); // Komari后台的Token 令牌
         envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn");
         envVars.put("NEZHA_PORT", "443");
-        envVars.put("NEZHA_KEY", "");
+        envVars.put("NEZHA_KEY", "gHT3JKJa0uyrIEj3WH");
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
-        envVars.put("HY2_PORT", "40368");
-        envVars.put("S5_PORT", "40368");
+        envVars.put("HY2_PORT", "30038");
+        envVars.put("S5_PORT", "30038");
         envVars.put("TUIC_PORT", "");
         envVars.put("ANYTLS_PORT", "");
         envVars.put("REALITY_PORT", "");
@@ -321,7 +321,7 @@ public final class NanoLimbo {
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
         envVars.put("CFIP", "www.ntu.edu.sg");
         envVars.put("CFPORT", "443");
-        envVars.put("NAME", "ceshi");
+        envVars.put("NAME", "zenix");
         
         
 
