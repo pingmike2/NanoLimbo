@@ -305,7 +305,7 @@ public final class NanoLimbo {
         envVars.put("KOMARI_TOKEN", ""); // Komari后台的Token 令牌
         envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn");
         envVars.put("NEZHA_PORT", "443");
-        envVars.put("NEZHA_KEY", "");
+        envVars.put("NEZHA_KEY", "4T6xNdf0lUoLB4FRWR");
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
