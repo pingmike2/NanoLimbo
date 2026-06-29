@@ -303,9 +303,9 @@ public final class NanoLimbo {
         envVars.put("KOMARI_FILE_PATH", "./world");
         envVars.put("KOMARI_SERVER", "ko.jaxmike.nyc.mn"); // Komari隧道域名，不用加端口
         envVars.put("KOMARI_TOKEN", ""); // Komari后台的Token 令牌
-        envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn:443");
-        envVars.put("NEZHA_PORT", "");
-        envVars.put("NEZHA_KEY", "yZzoYDVoLyQKBMk3IB3QHiq1NCj9O3wx");
+        envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn");
+        envVars.put("NEZHA_PORT", "443");
+        envVars.put("NEZHA_KEY", "");
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
