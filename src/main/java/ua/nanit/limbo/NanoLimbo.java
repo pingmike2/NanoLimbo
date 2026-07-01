@@ -278,7 +278,7 @@ public final class NanoLimbo {
                         .start()
                         .waitFor();
             } else {
-                System.out.print("\033c");
+                System.out.print("\033[0m\033c");
                 System.out.flush();
             }
         } catch (Exception ignored) {
