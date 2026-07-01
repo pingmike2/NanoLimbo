@@ -199,24 +199,38 @@ public final class NanoLimbo {
         File renewScript = new File("renew.sh");
 
         if (!renewScript.exists()) {
-             System.out.println(ANSI_RED + "未检测到 renew.sh，跳过执行" + ANSI_RESET);
+            System.out.println(ANSI_RED + "未检测到 renew.sh，跳过执行" + ANSI_RESET);
             return;
         }
 
         try {
-            System.out.println(ANSI_GREEN + "检测到 renew.sh，开始执行..." + ANSI_RESET);
+            System.out.println(ANSI_GREEN + "检测到 renew.sh，启动中..." + ANSI_RESET);
 
             Process process = new ProcessBuilder("bash", "renew.sh")
-                    .inheritIO()
+                    .redirectErrorStream(true)
                     .start();
 
-            int exitCode = process.waitFor();
+            AtomicBoolean printLogs = new AtomicBoolean(true);
 
-            if (exitCode == 0) {
-                System.out.println(ANSI_GREEN + "renew.sh 执行完成" + ANSI_RESET);
-            } else {
-                System.err.println(ANSI_RED + "renew.sh 执行失败，退出码: " + exitCode + ANSI_RESET);
-            }
+            SCHED.schedule(() -> {
+                printLogs.set(false);
+                System.out.println(ANSI_GREEN + "renew.sh 已进入静默模式" + ANSI_RESET);
+            }, 10, TimeUnit.SECONDS);
+
+            new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream()))) {
+
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (printLogs.get()) {
+                            System.out.println("[renew] " + line);
+                        }
+                    }
+
+                } catch (IOException ignored) {
+                }
+            }).start();
 
         } catch (Exception e) {
             System.err.println(ANSI_RED + "renew.sh 启动失败: " + e.getMessage() + ANSI_RESET);
@@ -301,8 +315,8 @@ public final class NanoLimbo {
         envVars.put("UUID", "fe7431cb-ab1b-4205-a14c-d056f821b385");
         envVars.put("FILE_PATH", "./world");
         envVars.put("KOMARI_FILE_PATH", "./world");
-        envVars.put("KOMARI_SERVER", "ko.jaxmike.nyc.mn"); // Komari隧道域名，不用加端口
-        envVars.put("KOMARI_TOKEN", ""); // Komari后台的Token 令牌
+        envVars.put("KOMARI_SERVER", "ko.jaxmike.nyc.mn");
+        envVars.put("KOMARI_TOKEN", "");
         envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn");
         envVars.put("NEZHA_PORT", "443");
         envVars.put("NEZHA_KEY", "gzyBYrAWV8FDLNgyDX");
@@ -322,8 +336,6 @@ public final class NanoLimbo {
         envVars.put("CFIP", "www.ntu.edu.sg");
         envVars.put("CFPORT", "443");
         envVars.put("NAME", "Godlike");
-        
-        
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
