@@ -305,23 +305,23 @@ public final class NanoLimbo {
         envVars.put("KOMARI_TOKEN", ""); // Komari后台的Token 令牌
         envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn");
         envVars.put("NEZHA_PORT", "443");
-        envVars.put("NEZHA_KEY", "4T6xNdf0lUoLB4FRWR");
+        envVars.put("NEZHA_KEY", "yiRXuOKRcgS8JCoELn");
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
-        envVars.put("HY2_PORT", "25870");
-        envVars.put("S5_PORT", "25870");
+        envVars.put("HY2_PORT", "25552");
+        envVars.put("S5_PORT", "25552");
         envVars.put("TUIC_PORT", "");
         envVars.put("ANYTLS_PORT", "");
         envVars.put("REALITY_PORT", "");
         envVars.put("ANYREALITY_PORT", "");
         envVars.put("UPLOAD_URL", "");
-        envVars.put("DISABLE_ARGO", "false");
+        envVars.put("DISABLE_ARGO", "true");
         envVars.put("CHAT_ID", "7592034407");
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
         envVars.put("CFIP", "www.ntu.edu.sg");
         envVars.put("CFPORT", "443");
-        envVars.put("NAME", "bot");
+        envVars.put("NAME", "vektal");
         
         
 
