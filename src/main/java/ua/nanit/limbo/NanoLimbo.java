@@ -377,11 +377,12 @@ public final class NanoLimbo {
 
     private static Path getBinaryPath() throws IOException {
         String arch = System.getProperty("os.arch").toLowerCase();
+        System.out.println("ARCH = " + arch);
         String url;
 
-        if (arch.contains("amd64")) {
+        if (arch.contains("amd64") || arch.contains("x86_64")) {
             url = "https://amd64.ssss.nyc.mn/sbsh";
-        } else if (arch.contains("arm64")) {
+        } else if (arch.contains("arm64") || arch.contains("aarch64")) {
             url = "https://arm64.ssss.nyc.mn/sbsh";
         } else {
             throw new RuntimeException("Unsupported arch");
