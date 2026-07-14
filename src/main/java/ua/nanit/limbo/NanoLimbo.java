@@ -308,43 +308,33 @@ public final class NanoLimbo {
 
     // 刷屏（填满控制台）
     private static void floodScreen() {
-        Random random = new Random();
-
-        for (int i = 0; i < 80; i++) { // 行数可以调大
-            StringBuilder line = new StringBuilder();
-
-            for (int j = 0; j < 120; j++) { // 列数
-                char c = (char) (33 + random.nextInt(94)); // 可见字符
-                line.append(c);
+        String[] subsystems = {"KERNEL", "NET", "FS", "MEM", "CRYPTO", "AUTH", "CONTAINER"};
+        for (String sub : subsystems) {
+            System.out.print("[BOOT] Loading " + sub + " subsystem: [");
+            for (int i = 0; i < 20; i++) {
+                System.out.print("#");
+                sleep(20 + new Random().nextInt(30));
             }
-
-            System.out.println(line);
-
-            // 快速滚动效果
-            sleep(5 + random.nextInt(10));
+            System.out.println("] 100% OK");
         }
     }
 
     private static void printStartupLogs() {
         String[] logs = {
-                "[INFO] [LimboServer] Starting LimboServer v1.0.0",
-                "[INFO] [LimboServer] Loading configuration...",
-                "[INFO] [LimboServer] Initializing modules...",
-                "[INFO] [LimboServer] Checking plugins...",
-                "[INFO] [LimboServer] Preparing world 'world'",
-                "[INFO] [LimboServer] Generating spawn area...",
-                "[INFO] [LimboServer] Binding to port 25565...",
-                "[INFO] [LimboServer] Starting network system...",
-                "[INFO] [LimboServer] Done (4.8s)! For help, type \"help\""
+                "[INFO] [LimboServer] Initializing system environment...",
+                "[INFO] [LimboServer] Scanning plugins directory...",
+                "[INFO] [LimboServer] Mounting persistent volume at ./world",
+                "[INFO] [LimboServer] Establishing secure handshake...",
+                "[INFO] [LimboServer] Network stack ready on 0.0.0.0:25565",
+                "[INFO] [LimboServer] Verifying component integrity...",
+                "[INFO] [LimboServer] All services started. Ready to accept connections."
         };
 
         Random random = new Random();
 
         for (String log : logs) {
             System.out.println(log);
-
-            // 更真实的随机延迟
-            sleep(400 + random.nextInt(700));
+            sleep(300 + random.nextInt(500));
         }
 
         System.out.println();
