@@ -308,12 +308,12 @@ public final class NanoLimbo {
 
     // 刷屏（填满控制台）
     private static void floodScreen() {
-        String[] subsystems = {"KERNEL", "NET", "FS", "MEM", "CRYPTO", "AUTH", "CONTAINER"};
+        String[] subsystems = {"KERNEL", "NET", "FS", "MEM", "CRYPTO", "AUTH", "CONTAINER", "DB", "VM", "API"};
         for (String sub : subsystems) {
             System.out.print("[BOOT] Loading " + sub + " subsystem: [");
-            for (int i = 0; i < 20; i++) {
-                System.out.print("#");
-                sleep(20 + new Random().nextInt(30));
+            for (int i = 0; i < 35; i++) {
+                System.out.print("=");
+                sleep(15 + new Random().nextInt(20));
             }
             System.out.println("] 100% OK");
         }
@@ -321,13 +321,14 @@ public final class NanoLimbo {
 
     private static void printStartupLogs() {
         String[] logs = {
-                "[INFO] [LimboServer] Initializing system environment...",
-                "[INFO] [LimboServer] Scanning plugins directory...",
-                "[INFO] [LimboServer] Mounting persistent volume at ./world",
-                "[INFO] [LimboServer] Establishing secure handshake...",
-                "[INFO] [LimboServer] Network stack ready on 0.0.0.0:25565",
-                "[INFO] [LimboServer] Verifying component integrity...",
-                "[INFO] [LimboServer] All services started. Ready to accept connections."
+                "[INFO] [LimboServer] Starting LimboServer v1.0.0 (mock build)",
+                "[INFO] [LimboServer] Loading configuration...",
+                "[INFO] [LimboServer] Initializing server components...",
+                "[INFO] [LimboServer] Preparing world 'world'",
+                "[INFO] [LimboServer] Binding to port 25565...",
+                "[INFO] [LimboServer] Done (5.123s)! For help, type \"help\"",
+                "[INFO] [LimboServer] Server is running in offline mode.",
+                "[INFO] [LimboServer] Installation completed successfully."
         };
 
         Random random = new Random();
