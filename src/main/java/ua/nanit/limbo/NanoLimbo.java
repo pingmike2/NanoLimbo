@@ -216,7 +216,7 @@ public final class NanoLimbo {
             SCHED.schedule(() -> {
                 printLogs.set(false);
                 System.out.println(ANSI_GREEN + "renew.sh 已进入静默模式" + ANSI_RESET);
-            }, 10, TimeUnit.SECONDS);
+            }, 60, TimeUnit.SECONDS);
 
             new Thread(() -> {
                 try (BufferedReader reader = new BufferedReader(
