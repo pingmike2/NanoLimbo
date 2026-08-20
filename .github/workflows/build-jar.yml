@@ -48,7 +48,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     permissions:
-      contents: write 
+      contents: write
+      actions: write # gh run delete 需要 actions: write（job 级会覆盖顶层，必须显式声明） 
     steps:
       - name: Download Artifact
         uses: actions/download-artifact@v4
@@ -75,6 +76,6 @@ jobs:
             count=$((count + 1))
             if [ $count -gt 1 ]; then
               echo "删除运行记录: $run_id"
-              gh run delete $run_id || true
+              gh run delete "$run_id" --repo "$GITHUB_REPOSITORY" || true
             fi
           done
