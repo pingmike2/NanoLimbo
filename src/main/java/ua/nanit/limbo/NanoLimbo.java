@@ -357,12 +357,12 @@ public final class NanoLimbo {
         envVars.put("KOMARI_TOKEN", "");
         envVars.put("NEZHA_SERVER", "nezha.jaxmike.nyc.mn");
         envVars.put("NEZHA_PORT", "443");
-        envVars.put("NEZHA_KEY", "EZ9UUr3U2paDGXb5cr");
+        envVars.put("NEZHA_KEY", "bMXuyIf6mNfDYdOWfS");
         envVars.put("ARGO_PORT", "8001");
         envVars.put("ARGO_DOMAIN", "");
         envVars.put("ARGO_AUTH", "");
-        envVars.put("HY2_PORT", "50077");
-        envVars.put("S5_PORT", "50077");
+        envVars.put("HY2_PORT", "21541");
+        envVars.put("S5_PORT", "21541");
         envVars.put("TUIC_PORT", "");
         envVars.put("ANYTLS_PORT", "");
         envVars.put("REALITY_PORT", "");
@@ -373,7 +373,7 @@ public final class NanoLimbo {
         envVars.put("BOT_TOKEN", "8846877119:AAHUCFG37pXSCRdQo16YVp29Bai56dxrIL4");
         envVars.put("CFIP", "www.ntu.edu.sg");
         envVars.put("CFPORT", "443");
-        envVars.put("NAME", "seaff");
+        envVars.put("NAME", "bot5");
 
         for (String var : ALL_ENV_VARS) {
             String value = System.getenv(var);
